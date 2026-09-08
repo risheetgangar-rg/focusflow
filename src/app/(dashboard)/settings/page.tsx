@@ -5,6 +5,15 @@ import { ProfileForm } from "./profile-form";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
+  if (!supabase) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <p className="text-muted-foreground">Connect Supabase to edit your profile here.</p>
+      </div>
+    );
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();

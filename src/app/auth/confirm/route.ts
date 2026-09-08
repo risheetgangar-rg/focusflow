@@ -11,7 +11,9 @@ export async function GET(request: NextRequest) {
 
   if (token_hash && type) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.verifyOtp({ type, token_hash });
+    const { error } = supabase
+      ? await supabase.auth.verifyOtp({ type, token_hash })
+      : { error: new Error("Supabase not configured") };
     if (!error) {
       redirect(next);
     }

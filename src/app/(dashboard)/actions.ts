@@ -19,6 +19,9 @@ export async function updateProfile(
   }
 
   const supabase = await createClient();
+  if (!supabase) {
+    return { error: "Supabase isn't connected yet — this is a local demo." };
+  }
   const {
     data: { user },
   } = await supabase.auth.getUser();

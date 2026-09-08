@@ -15,6 +15,8 @@ export interface AuthFormState {
   message?: string;
 }
 
+const NOT_CONFIGURED_MESSAGE = "Supabase isn't connected yet — this is a local demo.";
+
 function siteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 }
@@ -32,6 +34,9 @@ export async function signIn(
   }
 
   const supabase = await createClient();
+  if (!supabase) {
+    return { error: NOT_CONFIGURED_MESSAGE };
+  }
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) {
     return { error: error.message };
@@ -53,6 +58,9 @@ export async function signUp(
   }
 
   const supabase = await createClient();
+  if (!supabase) {
+    return { error: NOT_CONFIGURED_MESSAGE };
+  }
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
@@ -78,6 +86,9 @@ export async function signInWithMagicLink(
   }
 
   const supabase = await createClient();
+  if (!supabase) {
+    return { error: NOT_CONFIGURED_MESSAGE };
+  }
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,
     options: { emailRedirectTo: `${siteUrl()}/auth/confirm?next=/today` },
@@ -99,6 +110,9 @@ export async function requestPasswordReset(
   }
 
   const supabase = await createClient();
+  if (!supabase) {
+    return { error: NOT_CONFIGURED_MESSAGE };
+  }
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
     redirectTo: `${siteUrl()}/auth/confirm?next=/reset-password`,
   });
@@ -119,6 +133,9 @@ export async function updatePassword(
   }
 
   const supabase = await createClient();
+  if (!supabase) {
+    return { error: NOT_CONFIGURED_MESSAGE };
+  }
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) {
     return { error: error.message };
@@ -129,6 +146,8 @@ export async function updatePassword(
 
 export async function signOut() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  if (supabase) {
+    await supabase.auth.signOut();
+  }
   redirect("/login");
 }

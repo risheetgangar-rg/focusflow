@@ -6,6 +6,12 @@ const PROTECTED_PREFIXES = ["/today", "/tasks", "/habits", "/review", "/rescue",
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    // Supabase isn't configured yet — run as an unauthenticated local demo
+    // instead of crashing every request.
+    return response;
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { todayDateString, weeklyProgress, type WeeklyProgress } from "@/services/habit-service";
 import { HabitForm } from "./habit-form";
+import { RewardFeedback } from "@/components/gamification/reward-feedback";
+import { useRewardFeedback } from "@/components/gamification/use-reward-feedback";
 import type { Habit, HabitCompletion, HabitCompletionStatus } from "@/types/habit";
 
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -60,6 +62,7 @@ export function HabitCard({
 }) {
   const [editOpen, setEditOpen] = useState(false);
   const [, startTransition] = useTransition();
+  const { reward, show } = useRewardFeedback();
   const progress: WeeklyProgress = weeklyProgress(completions, weekDates);
   const today = todayDateString();
 
@@ -68,11 +71,11 @@ export function HabitCard({
     const next: HabitCompletionStatus | null =
       current === undefined ? "completed" : current === "completed" ? "partial" : current === "partial" ? "skipped" : null;
 
-    startTransition(() => {
+    startTransition(async () => {
       if (next === null) {
-        clearHabitCompletionAction(habit.id, date);
+        await clearHabitCompletionAction(habit.id, date);
       } else {
-        setHabitCompletionAction(habit.id, date, next);
+        show(await setHabitCompletionAction(habit.id, date, next));
       }
     });
   }
@@ -120,6 +123,7 @@ export function HabitCard({
             </div>
           ))}
         </div>
+        <RewardFeedback reward={reward} />
       </CardContent>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

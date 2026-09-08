@@ -12,6 +12,8 @@ import { addSubtaskAction } from "@/app/(dashboard)/tasks/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { RewardFeedback } from "@/components/gamification/reward-feedback";
+import type { RewardResult } from "@/services/gamification-service";
 import type { Subtask, Task } from "@/types/task";
 
 interface Step {
@@ -50,6 +52,7 @@ export function FocusRunner({ task, subtasks }: { task: Task; subtasks: Subtask[
   const [paused, setPaused] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [newStepTitle, setNewStepTitle] = useState("");
+  const [doneReward, setDoneReward] = useState<RewardResult | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -78,8 +81,21 @@ export function FocusRunner({ task, subtasks }: { task: Task; subtasks: Subtask[
       await completeSubtaskStepAction(step.id);
     }
     if (isLastStep) {
-      await completeTaskStepAction(task.id);
-      if (sessionId) await endFocusSessionAction(sessionId, true);
+      const taskReward = await completeTaskStepAction(task.id);
+      const focusReward = sessionId ? await endFocusSessionAction(sessionId, true) : null;
+      if (taskReward && focusReward) {
+        setDoneReward({
+          ...focusReward,
+          xpAwarded: taskReward.xpAwarded + focusReward.xpAwarded,
+          totalXp: focusReward.totalXp,
+          unlockedAchievements: [
+            ...taskReward.unlockedAchievements,
+            ...focusReward.unlockedAchievements,
+          ],
+        });
+      } else {
+        setDoneReward(focusReward ?? taskReward);
+      }
       setMode("done");
       return;
     }
@@ -104,6 +120,7 @@ export function FocusRunner({ task, subtasks }: { task: Task; subtasks: Subtask[
       <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-24 text-center">
         <p className="text-2xl font-semibold">Nice work.</p>
         <p className="text-muted-foreground">{task.title} is complete.</p>
+        <RewardFeedback reward={doneReward} />
         <Button onClick={() => router.push("/today")}>Back to Today</Button>
       </div>
     );

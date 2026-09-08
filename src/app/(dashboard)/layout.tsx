@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 import { signOut } from "../(auth)/actions";
 import { Button } from "@/components/ui/button";
 import { QuickAdd } from "@/components/layout/quick-add";
+import { LevelBadge } from "@/components/gamification/level-badge";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { getProfile } from "@/repositories/profile-repository";
+import * as gamificationRepo from "@/repositories/gamification-repository";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -11,6 +14,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   if (isSupabaseConfigured && !user) {
     redirect("/login");
+  }
+
+  let showGamification = false;
+  let gamificationState: { xp: number; currentMomentum: number } | null = null;
+  if (supabase && user) {
+    const profile = await getProfile(supabase, user.id);
+    showGamification = profile?.gamificationMode !== "off";
+    if (showGamification) {
+      const state = await gamificationRepo.getState(supabase, user.id);
+      gamificationState = { xp: state.xp, currentMomentum: state.currentMomentum };
+    }
   }
 
   return (
@@ -30,7 +44,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Link href="/review">Review</Link>
           <Link href="/settings">Settings</Link>
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {gamificationState && (
+            <LevelBadge xp={gamificationState.xp} momentum={gamificationState.currentMomentum} />
+          )}
           <QuickAdd />
           {isSupabaseConfigured && (
             <form action={signOut}>

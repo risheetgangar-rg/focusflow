@@ -22,6 +22,8 @@ import {
 import { isOverdue } from "@/lib/dates/overdue";
 import { TaskForm } from "./task-form";
 import { SubtaskList } from "./subtask-list";
+import { RewardFeedback } from "@/components/gamification/reward-feedback";
+import { useRewardFeedback } from "@/components/gamification/use-reward-feedback";
 import type { Subtask, Task } from "@/types/task";
 
 const priorityVariant: Record<Task["priority"], "default" | "secondary" | "destructive"> = {
@@ -35,6 +37,7 @@ export function TaskItem({ task, subtasks }: { task: Task; subtasks: Subtask[] }
   const [editOpen, setEditOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [, startTransition] = useTransition();
+  const { reward, show } = useRewardFeedback();
   const overdue = isOverdue(task.dueAt, task.status);
   const completed = task.status === "completed";
 
@@ -45,11 +48,13 @@ export function TaskItem({ task, subtasks }: { task: Task; subtasks: Subtask[] }
           checked={completed}
           className="mt-0.5"
           onCheckedChange={(checked) =>
-            startTransition(() =>
-              checked === true
-                ? completeTaskAction(task.id)
-                : undoCompleteTaskAction(task.id),
-            )
+            startTransition(async () => {
+              if (checked === true) {
+                show(await completeTaskAction(task.id));
+              } else {
+                await undoCompleteTaskAction(task.id);
+              }
+            })
           }
         />
         <button
@@ -78,6 +83,7 @@ export function TaskItem({ task, subtasks }: { task: Task; subtasks: Subtask[] }
               </span>
             )}
           </div>
+          <RewardFeedback reward={reward} />
         </div>
 
         <DropdownMenu>

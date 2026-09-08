@@ -5,12 +5,17 @@ import * as habitRepo from "@/repositories/habit-repository";
 import { recommendNext } from "@/services/recommendation-service";
 import { getWeekDates } from "@/services/habit-service";
 import { needsRescue } from "@/services/rescue-service";
+import { ensureDailyQuest, ensureSideQuest } from "@/services/quest-service";
+import { todayDateString } from "@/services/habit-service";
 import { isDueToday } from "@/lib/dates/overdue";
 import { WhatsNextCard } from "@/components/today/whats-next-card";
 import { TaskList } from "@/components/tasks/task-list";
 import { HabitCard } from "@/components/habits/habit-card";
+import { QuestCard } from "@/components/gamification/quest-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { getProfile } from "@/repositories/profile-repository";
+import * as gamificationRepo from "@/repositories/gamification-repository";
 import type { Subtask, Task } from "@/types/task";
 
 function greeting(now: Date) {
@@ -63,6 +68,17 @@ export default async function TodayPage() {
     weekDates[6],
   );
 
+  const profile = await getProfile(supabase, user.id);
+  let quests: Awaited<ReturnType<typeof gamificationRepo.listQuestsForDate>> = [];
+  if (profile?.gamificationMode === "full") {
+    const dateStr = todayDateString(now);
+    await Promise.all([
+      ensureDailyQuest(supabase, user.id, dateStr),
+      ensureSideQuest(supabase, user.id, dateStr),
+    ]);
+    quests = await gamificationRepo.listQuestsForDate(supabase, user.id, dateStr);
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <h1 className="text-2xl font-semibold tracking-tight">{greeting(now)}</h1>
@@ -81,6 +97,8 @@ export default async function TodayPage() {
       )}
 
       <WhatsNextCard recommendation={recommendation} />
+
+      {quests.length > 0 && <QuestCard quests={quests} />}
 
       <section className="space-y-3">
         <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">

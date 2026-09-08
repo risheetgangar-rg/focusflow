@@ -8,6 +8,9 @@ import { subtaskTitleSchema } from "@/lib/validation/task";
 import * as taskRepo from "@/repositories/task-repository";
 import * as taskService from "@/services/task-service";
 import type { RescheduleTarget } from "@/services/task-service";
+import * as gamificationService from "@/services/gamification-service";
+import { incrementDailyQuestIfEligible } from "@/services/quest-service";
+import type { RewardResult } from "@/services/gamification-service";
 import type { TaskPriority, RecurrenceRule } from "@/types/task";
 
 export interface TaskFormState {
@@ -77,11 +80,19 @@ export async function deleteTaskAction(taskId: string) {
   refresh();
 }
 
-export async function completeTaskAction(taskId: string) {
+export async function completeTaskAction(taskId: string): Promise<RewardResult | null> {
   const { supabase, userId } = await requireUser();
-  if (!supabase || !userId) return;
-  await taskService.completeTask(supabase, userId, taskId);
+  if (!supabase || !userId) return null;
+
+  const task = await taskRepo.getTask(supabase, taskId);
+  const completed = await taskService.completeTask(supabase, userId, taskId);
   refresh();
+
+  if (!task) return null;
+  const xp = gamificationService.xpForTaskCompletion(task);
+  const reward = await gamificationService.awardXp(supabase, userId, "task_completed", taskId, xp);
+  await incrementDailyQuestIfEligible(supabase, userId, completed);
+  return reward;
 }
 
 export async function undoCompleteTaskAction(taskId: string) {

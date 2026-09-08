@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { habitFormSchema } from "@/lib/validation/habit";
 import * as habitRepo from "@/repositories/habit-repository";
 import { todayDateString } from "@/services/habit-service";
+import * as gamificationService from "@/services/gamification-service";
+import type { RewardResult } from "@/services/gamification-service";
 import type { HabitCompletionStatus } from "@/types/habit";
 
 export interface HabitFormState {
@@ -73,11 +75,21 @@ export async function setHabitCompletionAction(
   habitId: string,
   date: string,
   status: HabitCompletionStatus,
-) {
+): Promise<RewardResult | null> {
   const { supabase, userId } = await requireUser();
-  if (!supabase || !userId) return;
+  if (!supabase || !userId) return null;
+
   await habitRepo.setCompletion(supabase, userId, habitId, date, status);
   refresh();
+
+  if (status !== "completed" && status !== "partial") return null;
+  return gamificationService.awardXp(
+    supabase,
+    userId,
+    "habit_completed",
+    `${habitId}:${date}`,
+    gamificationService.XP_AMOUNTS.HABIT_COMPLETED,
+  );
 }
 
 export async function clearHabitCompletionAction(habitId: string, date: string) {

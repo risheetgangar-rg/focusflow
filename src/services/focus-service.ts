@@ -32,7 +32,7 @@ export async function endFocusSession(
   supabase: SupabaseClient,
   sessionId: string,
   completed: boolean,
-): Promise<void> {
+): Promise<{ actualMinutes: number }> {
   const { data: session, error: fetchError } = await supabase
     .from("focus_sessions")
     .select("started_at")
@@ -49,4 +49,5 @@ export async function endFocusSession(
     .eq("id", sessionId);
 
   if (error) throw error;
+  return { actualMinutes };
 }

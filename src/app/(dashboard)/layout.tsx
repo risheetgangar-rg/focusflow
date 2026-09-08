@@ -4,6 +4,8 @@ import { signOut } from "../(auth)/actions";
 import { Button } from "@/components/ui/button";
 import { QuickAdd } from "@/components/layout/quick-add";
 import { LevelBadge } from "@/components/gamification/level-badge";
+import { BottomNav } from "@/components/layout/bottom-nav";
+import { Settings } from "lucide-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getProfile } from "@/repositories/profile-repository";
 import * as gamificationRepo from "@/repositories/gamification-repository";
@@ -34,8 +36,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
           Local demo — Supabase isn&apos;t connected yet, so accounts and data aren&apos;t real.
         </div>
       )}
-      <header className="flex items-center justify-between border-b px-6 py-4">
-        <nav className="flex flex-wrap gap-4 text-sm font-medium">
+      <header className="flex items-center justify-between border-b px-4 py-4 sm:px-6">
+        <nav className="hidden flex-wrap gap-4 text-sm font-medium sm:flex">
           <Link href="/today">Today</Link>
           <Link href="/tasks">Tasks</Link>
           <Link href="/habits">Habits</Link>
@@ -44,11 +46,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Link href="/review">Review</Link>
           <Link href="/settings">Settings</Link>
         </nav>
+        <Link href="/today" className="text-sm font-semibold sm:hidden">
+          FocusFlow
+        </Link>
         <div className="flex items-center gap-3">
           {gamificationState && (
             <LevelBadge xp={gamificationState.xp} momentum={gamificationState.currentMomentum} />
           )}
           <QuickAdd />
+          <Link href="/settings" className="sm:hidden" aria-label="Settings">
+            <Settings size={18} />
+          </Link>
           {isSupabaseConfigured && (
             <form action={signOut}>
               <Button type="submit" variant="ghost" size="sm">
@@ -58,7 +66,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
           )}
         </div>
       </header>
-      <main className="flex-1 p-6">{children}</main>
+      <main className="flex-1 p-6 pb-20 sm:pb-6">{children}</main>
+      <BottomNav />
     </div>
   );
 }

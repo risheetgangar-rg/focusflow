@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { ChevronDown, ChevronRight, MoreHorizontal } from "lucide-react";
 import {
   completeTaskAction,
@@ -40,15 +40,17 @@ export function TaskItem({ task, subtasks }: { task: Task; subtasks: Subtask[] }
   const { reward, show } = useRewardFeedback();
   const overdue = isOverdue(task.dueAt, task.status);
   const completed = task.status === "completed";
+  const [optimisticCompleted, setOptimisticCompleted] = useOptimistic(completed);
 
   return (
     <div className="space-y-2 rounded-lg border p-3">
       <div className="flex items-start gap-3">
         <Checkbox
-          checked={completed}
+          checked={optimisticCompleted}
           className="mt-0.5"
           onCheckedChange={(checked) =>
             startTransition(async () => {
+              setOptimisticCompleted(checked === true);
               if (checked === true) {
                 show(await completeTaskAction(task.id));
               } else {
@@ -67,7 +69,7 @@ export function TaskItem({ task, subtasks }: { task: Task; subtasks: Subtask[] }
         </button>
 
         <div className="min-w-0 flex-1 space-y-1">
-          <p className={completed ? "text-muted-foreground line-through" : "font-medium"}>
+          <p className={optimisticCompleted ? "text-muted-foreground line-through" : "font-medium"}>
             {task.title}
           </p>
           <div className="flex flex-wrap items-center gap-1.5 text-xs">

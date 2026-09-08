@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export default async function Home() {
   const supabase = await createClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
 
-  if (user) {
+  // No backend connected yet -> this is a local demo, so skip login
+  // entirely and drop straight into the app.
+  if (!isSupabaseConfigured || user) {
     redirect("/today");
   }
 

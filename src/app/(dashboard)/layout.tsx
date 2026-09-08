@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "../(auth)/actions";
 import { Button } from "@/components/ui/button";
+import { QuickAdd } from "@/components/layout/quick-add";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -20,20 +21,25 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       )}
       <header className="flex items-center justify-between border-b px-6 py-4">
-        <nav className="flex gap-4 text-sm font-medium">
+        <nav className="flex flex-wrap gap-4 text-sm font-medium">
           <Link href="/today">Today</Link>
           <Link href="/tasks">Tasks</Link>
           <Link href="/habits">Habits</Link>
+          <Link href="/brain-dump">Brain dump</Link>
+          <Link href="/rescue">Rescue</Link>
           <Link href="/review">Review</Link>
           <Link href="/settings">Settings</Link>
         </nav>
-        {isSupabaseConfigured && (
-          <form action={signOut}>
-            <Button type="submit" variant="ghost" size="sm">
-              Sign out
-            </Button>
-          </form>
-        )}
+        <div className="flex items-center gap-2">
+          <QuickAdd />
+          {isSupabaseConfigured && (
+            <form action={signOut}>
+              <Button type="submit" variant="ghost" size="sm">
+                Sign out
+              </Button>
+            </form>
+          )}
+        </div>
       </header>
       <main className="flex-1 p-6">{children}</main>
     </div>

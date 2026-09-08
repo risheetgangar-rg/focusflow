@@ -1,9 +1,13 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import * as taskRepo from "@/repositories/task-repository";
+import * as habitRepo from "@/repositories/habit-repository";
 import { recommendNext } from "@/services/recommendation-service";
+import { getWeekDates } from "@/services/habit-service";
 import { isDueToday } from "@/lib/dates/overdue";
 import { WhatsNextCard } from "@/components/today/whats-next-card";
 import { TaskList } from "@/components/tasks/task-list";
+import { HabitCard } from "@/components/habits/habit-card";
 import type { Subtask, Task } from "@/types/task";
 
 function greeting(now: Date) {
@@ -47,6 +51,15 @@ export default async function TodayPage() {
     subtasksByTask.set(s.taskId, [...(subtasksByTask.get(s.taskId) ?? []), s]);
   }
 
+  const habits = await habitRepo.listHabits(supabase, user.id);
+  const weekDates = getWeekDates(now);
+  const completions = await habitRepo.listCompletionsInRange(
+    supabase,
+    habits.map((h) => h.id),
+    weekDates[0],
+    weekDates[6],
+  );
+
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <h1 className="text-2xl font-semibold tracking-tight">{greeting(now)}</h1>
@@ -60,11 +73,32 @@ export default async function TodayPage() {
         <TaskList tasks={importantToday as Task[]} subtasksByTask={subtasksByTask} />
       </section>
 
+      {habits.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
+            Habits
+          </h2>
+          <div className="space-y-3">
+            {habits.map((habit) => (
+              <HabitCard
+                key={habit.id}
+                habit={habit}
+                completions={completions.filter((c) => c.habitId === habit.id)}
+                weekDates={weekDates}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="space-y-3">
         <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
           Later
         </h2>
         <TaskList tasks={later as Task[]} subtasksByTask={subtasksByTask} />
+        <Link href="/tasks" className="text-muted-foreground text-sm hover:underline">
+          View all tasks →
+        </Link>
       </section>
     </div>
   );

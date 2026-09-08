@@ -4,10 +4,13 @@ import * as taskRepo from "@/repositories/task-repository";
 import * as habitRepo from "@/repositories/habit-repository";
 import { recommendNext } from "@/services/recommendation-service";
 import { getWeekDates } from "@/services/habit-service";
+import { needsRescue } from "@/services/rescue-service";
 import { isDueToday } from "@/lib/dates/overdue";
 import { WhatsNextCard } from "@/components/today/whats-next-card";
 import { TaskList } from "@/components/tasks/task-list";
 import { HabitCard } from "@/components/habits/habit-card";
+import { Card, CardContent } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 import type { Subtask, Task } from "@/types/task";
 
 function greeting(now: Date) {
@@ -63,6 +66,19 @@ export default async function TodayPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <h1 className="text-2xl font-semibold tracking-tight">{greeting(now)}</h1>
+
+      {needsRescue(tasks, now) && (
+        <Card className="border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950">
+          <CardContent className="flex items-center justify-between gap-4">
+            <p className="text-sm text-amber-900 dark:text-amber-200">
+              Things have piled up a bit. Let&apos;s pick a few and get moving.
+            </p>
+            <Link href="/rescue" className={buttonVariants({ size: "sm" })}>
+              Get back on track
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       <WhatsNextCard recommendation={recommendation} />
 

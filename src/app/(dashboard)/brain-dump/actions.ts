@@ -31,6 +31,7 @@ export async function parseBrainDumpAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Nothing to work with yet." };
   }
+  const source = formData.get("source") === "voice" ? "voice" : "text";
 
   const { supabase, userId } = await requireUser();
   if (!supabase || !userId) return { error: NOT_CONFIGURED };
@@ -40,7 +41,7 @@ export async function parseBrainDumpAction(
     return { error: "I couldn't confidently understand that. Try editing it." };
   }
 
-  await brainDumpService.recordBrainDump(supabase, userId, parsed.data.text, "text", items);
+  await brainDumpService.recordBrainDump(supabase, userId, parsed.data.text, source, items);
   return { items };
 }
 
@@ -60,11 +61,12 @@ export async function confirmBrainDumpAction(
   } catch {
     return { error: "Something went wrong reading your edits. Try again." };
   }
+  const source = formData.get("source") === "voice" ? "voice" : "brain_dump";
 
   const { supabase, userId } = await requireUser();
   if (!supabase || !userId) return { error: NOT_CONFIGURED };
 
-  await brainDumpService.createTasksFromItems(supabase, userId, items, "brain_dump");
+  await brainDumpService.createTasksFromItems(supabase, userId, items, source);
   revalidatePath("/tasks");
   revalidatePath("/today");
   return { message: `Added ${items.length} task${items.length === 1 ? "" : "s"}.` };

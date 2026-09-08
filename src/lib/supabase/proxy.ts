@@ -10,6 +10,7 @@ const PROTECTED_PREFIXES = [
   "/settings",
   "/focus",
   "/brain-dump",
+  "/voice",
 ];
 
 export async function updateSession(request: NextRequest) {

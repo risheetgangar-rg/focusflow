@@ -22,7 +22,13 @@ import type { ParsedTaskItem } from "@/types/brain-dump";
 const parseInitial: BrainDumpParseState = {};
 const confirmInitial: ConfirmState = {};
 
-export function BrainDumpForm() {
+export function BrainDumpForm({
+  source = "text",
+  defaultText,
+}: {
+  source?: "text" | "voice";
+  defaultText?: string;
+}) {
   const [parseState, parseAction, parsing] = useActionState(parseBrainDumpAction, parseInitial);
   const [confirmState, confirmAction, confirming] = useActionState(
     confirmBrainDumpAction,
@@ -57,9 +63,11 @@ export function BrainDumpForm() {
         {confirmState.message && (
           <p className="text-sm text-green-700 dark:text-green-500">{confirmState.message}</p>
         )}
+        <input type="hidden" name="source" value={source} />
         <Textarea
           name="text"
           rows={5}
+          defaultValue={defaultText}
           placeholder="Tomorrow call Rahul at 6 and finish presentation, and pay electricity bill Friday."
           required
         />
@@ -124,6 +132,7 @@ export function BrainDumpForm() {
 
       <form action={confirmAction} className="flex gap-2">
         <input type="hidden" name="items" value={JSON.stringify(items)} />
+        <input type="hidden" name="source" value={source} />
         <Button type="submit" disabled={confirming || items.length === 0}>
           Save {items.length} task{items.length === 1 ? "" : "s"}
         </Button>

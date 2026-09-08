@@ -22,6 +22,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <header className="flex items-center justify-between border-b px-6 py-4">
         <nav className="flex gap-4 text-sm font-medium">
           <Link href="/today">Today</Link>
+          <Link href="/tasks">Tasks</Link>
+          <Link href="/habits">Habits</Link>
+          <Link href="/review">Review</Link>
           <Link href="/settings">Settings</Link>
         </nav>
         {isSupabaseConfigured && (

@@ -21,8 +21,11 @@ const hasLiveCredentials = Boolean(url && anonKey && emailA && passwordA && emai
 
 describe.skipIf(!hasLiveCredentials)("profiles RLS isolation", () => {
   it("user A can read and update only their own profile, never user B's", async () => {
-    const clientA = createClient(url!, anonKey!);
-    const clientB = createClient(url!, anonKey!);
+    // No persisted session: two clients in one process would otherwise share
+    // a storage slot and overwrite each other's login.
+    const isolated = { auth: { persistSession: false, autoRefreshToken: false } };
+    const clientA = createClient(url!, anonKey!, isolated);
+    const clientB = createClient(url!, anonKey!, isolated);
 
     const { data: signInA, error: signInAError } = await clientA.auth.signInWithPassword({
       email: emailA!,

@@ -22,6 +22,7 @@ import {
 import { isOverdue } from "@/lib/dates/overdue";
 import { TaskForm } from "./task-form";
 import { SubtaskList } from "./subtask-list";
+import { LocalDate } from "./local-date";
 import { RewardFeedback } from "@/components/gamification/reward-feedback";
 import { useRewardFeedback } from "@/components/gamification/use-reward-feedback";
 import type { Subtask, Task } from "@/types/task";
@@ -81,7 +82,7 @@ export function TaskItem({ task, subtasks }: { task: Task; subtasks: Subtask[] }
             )}
             {task.dueAt && (
               <span className="text-muted-foreground">
-                due {new Date(task.dueAt).toLocaleDateString()}
+                due <LocalDate iso={task.dueAt} />
               </span>
             )}
           </div>

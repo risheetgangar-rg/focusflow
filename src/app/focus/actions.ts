@@ -1,79 +1,79 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/auth/session";
+import { XP_AMOUNTS } from "@/lib/gamification/rules";
 import * as taskRepo from "@/repositories/task-repository";
-import * as taskService from "@/services/task-service";
+import { track } from "@/services/analytics-service";
+import { completeTaskWithRewards, EMPTY_OUTCOME } from "@/services/completion-service";
 import * as focusService from "@/services/focus-service";
-import * as gamificationService from "@/services/gamification-service";
-import { incrementDailyQuestIfEligible } from "@/services/quest-service";
-import type { RewardResult } from "@/services/gamification-service";
+import { awardXp } from "@/services/gamification-service";
+import type { CompletionOutcome } from "@/types/gamification";
 
-async function requireUser() {
-  const supabase = await createClient();
-  if (!supabase) return { supabase: null, userId: null };
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return { supabase, userId: user?.id ?? null };
-}
-
-export async function startFocusSessionAction(taskId: string, plannedMinutes: number | null) {
-  const { supabase, userId } = await requireUser();
-  if (!supabase || !userId) return null;
+export async function startFocusSessionAction(taskId: string, plannedMinutes: number | null): Promise<string | null> {
+  const session = await getSession();
+  if (!session) return null;
+  const { supabase, userId, timezone, profile } = session;
 
   await taskRepo.markTaskStarted(supabase, taskId);
-  const session = await focusService.startFocusSession(supabase, userId, taskId, plannedMinutes);
-  await gamificationService.awardXp(
-    supabase,
-    userId,
-    "task_started",
-    taskId,
-    gamificationService.XP_AMOUNTS.TASK_STARTED,
-  );
-  return session.id;
+  const focus = await focusService.startFocusSession(supabase, userId, taskId, plannedMinutes);
+  await Promise.all([
+    track(supabase, userId, "task_started", { task_id: taskId }),
+    track(supabase, userId, "focus_started", { task_id: taskId, planned_minutes: plannedMinutes }),
+    profile.gamificationMode === "off"
+      ? Promise.resolve(null)
+      : awardXp(supabase, userId, {
+          type: "task_started",
+          sourceId: taskId,
+          xp: XP_AMOUNTS.TASK_STARTED,
+          timezone,
+          achievements: profile.gamificationMode === "full",
+        }),
+  ]);
+  revalidatePath("/today");
+  return focus.id;
 }
 
-export async function endFocusSessionAction(
-  sessionId: string,
-  completed: boolean,
-): Promise<RewardResult | null> {
-  const { supabase, userId } = await requireUser();
-  if (!supabase || !userId) return null;
+export async function endFocusSessionAction(sessionId: string, completed: boolean): Promise<CompletionOutcome> {
+  const session = await getSession();
+  if (!session) return EMPTY_OUTCOME;
+  const { supabase, userId, timezone, profile } = session;
 
   const { actualMinutes } = await focusService.endFocusSession(supabase, sessionId, completed);
-  if (!completed) return null;
+  if (!completed) return EMPTY_OUTCOME;
 
-  return gamificationService.awardXp(
-    supabase,
-    userId,
-    "focus_completed",
-    sessionId,
-    gamificationService.XP_AMOUNTS.FOCUS_SESSION,
-    new Date(),
-    { focusMinutes: actualMinutes },
-  );
+  await track(supabase, userId, "focus_completed", { minutes: actualMinutes });
+  if (profile.gamificationMode === "off") return EMPTY_OUTCOME;
+
+  const reward = await awardXp(supabase, userId, {
+    type: "focus_completed",
+    sourceId: sessionId,
+    xp: XP_AMOUNTS.FOCUS_SESSION,
+    timezone,
+    focusMinutes: actualMinutes,
+    achievements: profile.gamificationMode === "full",
+  });
+  return { ...EMPTY_OUTCOME, reward };
 }
 
 export async function completeSubtaskStepAction(subtaskId: string) {
-  const { supabase } = await requireUser();
-  if (!supabase) return;
-  await taskRepo.setSubtaskCompleted(supabase, subtaskId, true);
+  const session = await getSession();
+  if (!session) return;
+  await taskRepo.setSubtaskCompleted(session.supabase, subtaskId, true);
   revalidatePath("/tasks");
 }
 
-export async function completeTaskStepAction(taskId: string): Promise<RewardResult | null> {
-  const { supabase, userId } = await requireUser();
-  if (!supabase || !userId) return null;
+/** Finishing the last step completes the task itself, with the full reward. */
+export async function completeTaskStepAction(taskId: string): Promise<CompletionOutcome> {
+  const session = await getSession();
+  if (!session) return EMPTY_OUTCOME;
+  const { supabase, userId, timezone, profile } = session;
 
-  const task = await taskRepo.getTask(supabase, taskId);
-  const completed = await taskService.completeTask(supabase, userId, taskId);
+  const outcome = await completeTaskWithRewards(
+    { supabase, userId, timezone, mode: profile.gamificationMode },
+    taskId,
+  );
   revalidatePath("/tasks");
   revalidatePath("/today");
-
-  if (!task) return null;
-  const xp = gamificationService.xpForTaskCompletion(task);
-  const reward = await gamificationService.awardXp(supabase, userId, "task_completed", taskId, xp);
-  await incrementDailyQuestIfEligible(supabase, userId, completed);
-  return reward;
+  return outcome;
 }

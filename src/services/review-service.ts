@@ -1,14 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { DEFAULT_TIMEZONE, zonedDateString } from "@/lib/dates/tz";
 import type { Task } from "@/types/task";
-
-function isSameLocalDate(iso: string, reference: Date): boolean {
-  const d = new Date(iso);
-  return (
-    d.getFullYear() === reference.getFullYear() &&
-    d.getMonth() === reference.getMonth() &&
-    d.getDate() === reference.getDate()
-  );
-}
 
 export interface DailyStats {
   completedCount: number;
@@ -22,9 +14,17 @@ export interface DailyStats {
  * log, so this reads current state rather than "rescheduled specifically
  * today."
  */
-export function computeDailyStats(tasks: Task[], now: Date = new Date()): DailyStats {
+export function computeDailyStats(
+  tasks: Task[],
+  now: Date = new Date(),
+  timezone: string = DEFAULT_TIMEZONE,
+): DailyStats {
+  const today = zonedDateString(now, timezone);
   const completedCount = tasks.filter(
-    (t) => t.status === "completed" && t.completedAt && isSameLocalDate(t.completedAt, now),
+    (t) =>
+      t.status === "completed" &&
+      t.completedAt &&
+      zonedDateString(new Date(t.completedAt), timezone) === today,
   ).length;
   const pending = tasks.filter((t) => t.status === "pending");
   const rescheduledCount = pending.filter((t) => t.postponedCount > 0).length;
@@ -42,15 +42,13 @@ export function computeWeeklyStats(
   focusSessionCount: number,
   weekStart: string,
   weekEnd: string,
+  timezone: string = DEFAULT_TIMEZONE,
 ): WeeklyStats {
-  const importantCompletedCount = tasks.filter(
-    (t) =>
-      t.status === "completed" &&
-      t.importance >= 4 &&
-      t.completedAt &&
-      t.completedAt.slice(0, 10) >= weekStart &&
-      t.completedAt.slice(0, 10) <= weekEnd,
-  ).length;
+  const importantCompletedCount = tasks.filter((t) => {
+    if (t.status !== "completed" || t.importance < 4 || !t.completedAt) return false;
+    const day = zonedDateString(new Date(t.completedAt), timezone);
+    return day >= weekStart && day <= weekEnd;
+  }).length;
 
   return { focusSessionCount, importantCompletedCount };
 }

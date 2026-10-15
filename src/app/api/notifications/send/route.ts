@@ -5,6 +5,7 @@ import * as taskRepo from "@/repositories/task-repository";
 import * as habitRepo from "@/repositories/habit-repository";
 import { generateHabitReminders, generateTaskReminders, isWithinQuietHours } from "@/services/reminder-service";
 import { sendPushNotification } from "@/services/notification-service";
+import { resolveTimezone, zonedWallClock } from "@/lib/dates/tz";
 
 export const dynamic = "force-dynamic";
 
@@ -31,8 +32,13 @@ export async function GET(request: NextRequest) {
   let sent = 0;
 
   for (const userId of userIds) {
-    const prefs = await reminderRepo.getPreferences(admin, userId);
-    if (isWithinQuietHours(now, prefs)) continue;
+    const [prefs, timezone] = await Promise.all([
+      reminderRepo.getPreferences(admin, userId),
+      reminderRepo.getTimezone(admin, userId),
+    ]);
+    // Quiet hours and habit reminder times are wall-clock times in the user's own timezone.
+    const wallClock = zonedWallClock(now, resolveTimezone(timezone));
+    if (isWithinQuietHours(wallClock, prefs)) continue;
 
     const [tasks, habits] = await Promise.all([
       taskRepo.listTasks(admin, userId),
@@ -41,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     const candidates = [
       ...generateTaskReminders(tasks, now, prefs),
-      ...generateHabitReminders(habits, now, prefs),
+      ...generateHabitReminders(habits, wallClock, prefs),
     ];
     if (candidates.length === 0) continue;
 

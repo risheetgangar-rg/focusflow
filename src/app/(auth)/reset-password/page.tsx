@@ -1,40 +1,28 @@
-"use client";
+import type { Metadata } from "next";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { ExpiredLink } from "@/components/auth/expired-link";
+import { ResetPasswordForm } from "@/components/auth/reset-password-form";
+import { createClient } from "@/lib/supabase/server";
 
-import { useActionState } from "react";
-import { updatePassword, type AuthFormState } from "../actions";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+export const metadata: Metadata = { title: "Choose a new password" };
 
-const initialState: AuthFormState = {};
+/** The emailed link signs you in, so with no session here the link was already used or has timed out. */
+async function hasRecoverySession(): Promise<boolean> {
+  const supabase = await createClient();
+  // Not connected to a backend (local demo): show the form so the screen can still be seen.
+  if (!supabase) return true;
 
-export default function ResetPasswordPage() {
-  const [state, action, pending] = useActionState(updatePassword, initialState);
+  try {
+    const { data } = await supabase.auth.getClaims();
+    return Boolean(data?.claims?.sub);
+  } catch {
+    // If we can't tell, let them try: the form reports a real problem if there is one.
+    return true;
+  }
+}
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-2xl">Choose a new password</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <form action={action} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="password">New password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              required
-            />
-          </div>
-          {state.error && <p className="text-destructive text-sm">{state.error}</p>}
-          <Button type="submit" disabled={pending} className="w-full">
-            Update password
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-  );
+export default async function ResetPasswordPage() {
+  const canReset = await hasRecoverySession();
+
+  return <AuthShell panel="reset">{canReset ? <ResetPasswordForm /> : <ExpiredLink />}</AuthShell>;
 }

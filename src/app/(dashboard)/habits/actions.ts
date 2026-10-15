@@ -1,28 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/auth/session";
+import { XP_AMOUNTS } from "@/lib/gamification/rules";
 import { habitFormSchema } from "@/lib/validation/habit";
 import * as habitRepo from "@/repositories/habit-repository";
-import { todayDateString } from "@/services/habit-service";
-import * as gamificationService from "@/services/gamification-service";
-import type { RewardResult } from "@/services/gamification-service";
+import { track } from "@/services/analytics-service";
+import { awardXp } from "@/services/gamification-service";
+import { EMPTY_OUTCOME } from "@/services/completion-service";
+import type { CompletionOutcome } from "@/types/gamification";
 import type { HabitCompletionStatus } from "@/types/habit";
 
 export interface HabitFormState {
   error?: string;
   message?: string;
-}
-
-const NOT_CONFIGURED = "Supabase isn't connected yet — this is a local demo.";
-
-async function requireUser() {
-  const supabase = await createClient();
-  if (!supabase) return { supabase: null, userId: null };
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return { supabase, userId: user?.id ?? null };
 }
 
 function refresh() {
@@ -37,27 +28,26 @@ export async function saveHabit(
 ): Promise<HabitFormState> {
   const parsed = habitFormSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? "Something looks off. Check the form." };
   }
 
-  const { supabase, userId } = await requireUser();
-  if (!supabase || !userId) return { error: NOT_CONFIGURED };
+  const session = await getSession();
+  if (!session) return { error: "Please sign in again." };
 
-  const { name, description, color, targetCount } = parsed.data;
+  const { name, description, color, targetCount, reminderEnabled, reminderTime } = parsed.data;
+  const fields = {
+    name,
+    description: description || null,
+    color,
+    targetCount,
+    reminderEnabled: reminderEnabled && Boolean(reminderTime),
+    reminderTime: reminderTime || null,
+  };
+
   if (habitId) {
-    await habitRepo.updateHabit(supabase, habitId, {
-      name,
-      description: description || null,
-      color,
-      targetCount,
-    });
+    await habitRepo.updateHabit(session.supabase, habitId, fields);
   } else {
-    await habitRepo.createHabit(supabase, userId, {
-      name,
-      description: description || null,
-      color,
-      targetCount,
-    });
+    await habitRepo.createHabit(session.supabase, session.userId, fields);
   }
 
   refresh();
@@ -65,9 +55,9 @@ export async function saveHabit(
 }
 
 export async function archiveHabitAction(habitId: string) {
-  const { supabase } = await requireUser();
-  if (!supabase) return;
-  await habitRepo.archiveHabit(supabase, habitId);
+  const session = await getSession();
+  if (!session) return;
+  await habitRepo.archiveHabit(session.supabase, habitId);
   refresh();
 }
 
@@ -75,30 +65,30 @@ export async function setHabitCompletionAction(
   habitId: string,
   date: string,
   status: HabitCompletionStatus,
-): Promise<RewardResult | null> {
-  const { supabase, userId } = await requireUser();
-  if (!supabase || !userId) return null;
+): Promise<CompletionOutcome> {
+  const session = await getSession();
+  if (!session) return EMPTY_OUTCOME;
+  const { supabase, userId, timezone, profile } = session;
 
   await habitRepo.setCompletion(supabase, userId, habitId, date, status);
   refresh();
 
-  if (status !== "completed" && status !== "partial") return null;
-  return gamificationService.awardXp(
-    supabase,
-    userId,
-    "habit_completed",
-    `${habitId}:${date}`,
-    gamificationService.XP_AMOUNTS.HABIT_COMPLETED,
-  );
+  if (status === "skipped" || profile.gamificationMode === "off") return EMPTY_OUTCOME;
+
+  await track(supabase, userId, "habit_completed", { habit_id: habitId, status });
+  const reward = await awardXp(supabase, userId, {
+    type: "habit_completed",
+    sourceId: `${habitId}:${date}`,
+    xp: XP_AMOUNTS.HABIT_COMPLETED,
+    timezone,
+    achievements: profile.gamificationMode === "full",
+  });
+  return { ...EMPTY_OUTCOME, reward };
 }
 
 export async function clearHabitCompletionAction(habitId: string, date: string) {
-  const { supabase } = await requireUser();
-  if (!supabase) return;
-  await habitRepo.clearCompletion(supabase, habitId, date);
+  const session = await getSession();
+  if (!session) return;
+  await habitRepo.clearCompletion(session.supabase, habitId, date);
   refresh();
-}
-
-export async function markHabitTodayAction(habitId: string, status: HabitCompletionStatus) {
-  return setHabitCompletionAction(habitId, todayDateString(), status);
 }

@@ -1,14 +1,23 @@
 {
   "name": "FocusFlow",
   "short_name": "FocusFlow",
-  "description": "ADHD-friendly executive-function support — brain dump, what's next, and gentle habits.",
-  "start_url": "/today",
+  "description": "A calm companion for brains that start late. Dump it out, see what's next, make it easy to begin.",
+  "id": "/today",
+  "start_url": "/today?from=pwa",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
+  "orientation": "portrait",
+  "background_color": "#faf9f6",
+  "theme_color": "#faf9f6",
+  "categories": ["productivity", "lifestyle", "health"],
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Brain dump", "short_name": "Dump", "url": "/brain-dump", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Start focusing", "short_name": "Focus", "url": "/focus", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
   ]
 }

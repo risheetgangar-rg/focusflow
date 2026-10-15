@@ -1,176 +1,92 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { zonedDateString } from "@/lib/dates/tz";
+import {
+  XP_AMOUNTS,
+  isComeback,
+  levelForXp,
+  nextMomentum,
+} from "@/lib/gamification/rules";
 import * as gamificationRepo from "@/repositories/gamification-repository";
-import type { XpEventType } from "@/types/gamification";
-import type { Task } from "@/types/task";
+import type { RewardResult, XpEventType } from "@/types/gamification";
 
-export const XP_AMOUNTS = {
-  TASK_STARTED: 5,
-  TASK_COMPLETED_SMALL: 10,
-  TASK_COMPLETED_IMPORTANT: 25,
-  TASK_COMPLETED_DIFFICULT: 35,
-  HABIT_COMPLETED: 10,
-  FOCUS_SESSION: 15,
-  DAILY_QUEST: 40,
-  SIDE_QUEST: 5,
-  RESCUE_ACTION: 20,
-  COMEBACK: 25,
-} as const;
-
-/** Incorporates friction and importance, per spec §40 — starting a hard task should feel worth it. */
-export function xpForTaskCompletion(task: Pick<Task, "friction" | "importance">): number {
-  if (task.friction >= 4) return XP_AMOUNTS.TASK_COMPLETED_DIFFICULT;
-  if (task.importance >= 4) return XP_AMOUNTS.TASK_COMPLETED_IMPORTANT;
-  return XP_AMOUNTS.TASK_COMPLETED_SMALL;
-}
-
-const LEVEL_TITLES = [
-  "Starting Point",
-  "Getting Moving",
-  "Building Momentum",
-  "Finding Rhythm",
-  "In The Zone",
-];
-
-/** Cumulative XP required to reach `level` (level 1 = 0). Level N costs 100*N more than N-1. */
-export function cumulativeXpForLevel(level: number): number {
-  return (100 * (level - 1) * level) / 2;
-}
-
-export function levelForXp(xp: number): number {
-  let level = 1;
-  while (cumulativeXpForLevel(level + 1) <= xp) level++;
-  return level;
-}
-
-export function levelTitle(level: number): string {
-  return LEVEL_TITLES[Math.min(level, LEVEL_TITLES.length) - 1] ?? `Level ${level}`;
-}
-
-export interface LevelProgress {
-  level: number;
-  title: string;
-  xpIntoLevel: number;
-  xpForNextLevel: number;
-}
-
-export function levelProgress(xp: number): LevelProgress {
-  const level = levelForXp(xp);
-  const base = cumulativeXpForLevel(level);
-  const next = cumulativeXpForLevel(level + 1);
-  return { level, title: levelTitle(level), xpIntoLevel: xp - base, xpForNextLevel: next - base };
-}
-
-const MOMENTUM_RESET_MINUTES = 180;
-
-/** Momentum is session-based — a long enough gap since the last activity starts a fresh session. */
-export function nextMomentum(currentMomentum: number, lastActivityAt: string | null, now: Date): number {
-  if (!lastActivityAt) return 1;
-  const minutesSince = (now.getTime() - new Date(lastActivityAt).getTime()) / 60_000;
-  if (minutesSince > MOMENTUM_RESET_MINUTES) return 1;
-  return currentMomentum + 1;
-}
-
-const COMEBACK_THRESHOLD_HOURS = 48;
-
-export function isComeback(lastActivityAt: string | null, now: Date): boolean {
-  if (!lastActivityAt) return false;
-  const hoursSince = (now.getTime() - new Date(lastActivityAt).getTime()) / 3_600_000;
-  return hoursSince >= COMEBACK_THRESHOLD_HOURS;
-}
-
-export const SIDE_QUEST_POOL = [
-  "Drink water",
-  "Clear your desk",
-  "Reply to one email",
-  "Put laundry away",
-  "Stand up and stretch",
-];
-
-/** Picks a stable side quest for the day so it doesn't change on every reload. */
-export function pickSideQuest(dateSeed: string): string {
-  let hash = 0;
-  for (let i = 0; i < dateSeed.length; i++) hash = (hash * 31 + dateSeed.charCodeAt(i)) >>> 0;
-  return SIDE_QUEST_POOL[hash % SIDE_QUEST_POOL.length];
-}
-
-export interface RewardResult {
-  xpAwarded: number;
-  totalXp: number;
-  leveledUp: boolean;
-  newLevel: number;
-  momentum: number;
-  isComeback: boolean;
-  unlockedAchievements: string[];
+export interface AwardOptions {
+  type: XpEventType;
+  /** What the XP is for (task id, session id...). Together with `type` this makes the award idempotent. */
+  sourceId: string | null;
+  xp: number;
+  now?: Date;
+  /** The person's timezone, so "once per day" bonuses follow their calendar day, not UTC's. */
+  timezone?: string;
+  focusMinutes?: number;
+  /** Achievements are part of the full game layer only. */
+  achievements?: boolean;
 }
 
 /**
  * Single entry point for awarding XP after any completion. Idempotent per
- * (userId, eventType, sourceId) via the xp_events unique constraint, so a
- * retried request or double-click never double-awards. Also rolls up
- * momentum, level-ups, comeback bonus, and achievement unlocks so callers
- * (server actions) don't have to orchestrate five separate writes.
+ * (userId, type, sourceId) via the xp_events unique constraint, so a retried
+ * request or double-click never double-pays. Also rolls up momentum,
+ * level-ups, the comeback bonus, and achievement unlocks so callers don't have
+ * to orchestrate half a dozen separate writes.
  */
 export async function awardXp(
   supabase: SupabaseClient,
   userId: string,
-  eventType: XpEventType,
-  sourceId: string | null,
-  xpAmount: number,
-  now: Date = new Date(),
-  context: { focusMinutes?: number } = {},
+  options: AwardOptions,
 ): Promise<RewardResult | null> {
+  const { type, sourceId, xp, now = new Date(), timezone = "UTC", focusMinutes = 0, achievements = false } = options;
+
   const stateBefore = await gamificationRepo.getState(supabase, userId);
-  const recorded = await gamificationRepo.recordXpEvent(supabase, userId, eventType, sourceId, xpAmount);
+  const recorded = await gamificationRepo.recordXpEvent(supabase, userId, type, sourceId, xp);
   if (!recorded) return null;
 
   const comeback = isComeback(stateBefore.lastActivityAt, now);
   const momentum = nextMomentum(stateBefore.currentMomentum, stateBefore.lastActivityAt, now);
-  let totalXp = stateBefore.xp + xpAmount;
-
+  let totalXp = stateBefore.xp + xp;
+  let xpAwarded = xp;
   const unlocked: string[] = [];
-  let xpAwarded = xpAmount;
+
+  const unlock = async (code: string) => {
+    if (!achievements) return;
+    const result = await gamificationRepo.unlockAchievement(supabase, userId, code);
+    if (result?.unlocked) {
+      unlocked.push(result.name);
+      totalXp += result.xpReward;
+      xpAwarded += result.xpReward;
+    }
+  };
 
   if (comeback) {
-    const comebackAwarded = await gamificationRepo.recordXpEvent(
+    const bonusGranted = await gamificationRepo.recordXpEvent(
       supabase,
       userId,
       "comeback",
-      now.toISOString().slice(0, 10),
+      zonedDateString(now, timezone),
       XP_AMOUNTS.COMEBACK,
     );
-    if (comebackAwarded) {
+    if (bonusGranted) {
       totalXp += XP_AMOUNTS.COMEBACK;
       xpAwarded += XP_AMOUNTS.COMEBACK;
-      const r = await gamificationRepo.unlockAchievement(supabase, userId, "COMEBACK");
-      if (r?.unlocked) unlocked.push(r.name);
     }
   }
+
+  // "Return after time away and complete something": a recent comeback bonus + a completion.
+  if (type === "task_completed" && (comeback || (await gamificationRepo.hasRecentEvent(supabase, userId, "comeback", 24)))) {
+    await unlock("COMEBACK");
+  }
+
+  if (type === "task_completed") {
+    const completedCount = await gamificationRepo.countXpEventsByType(supabase, userId, "task_completed");
+    if (completedCount === 1) await unlock("FIRST_STEP");
+    if (completedCount >= 5) await unlock("TINY_WINS");
+  }
+  if (momentum >= 3) await unlock("MOMENTUM");
+  if (type === "focus_completed" && focusMinutes >= 25) await unlock("DEEP_FOCUS");
+  if (type === "boss_defeated") await unlock("BOSS_SLAYER");
 
   const newLevel = levelForXp(totalXp);
   const longestMomentum = Math.max(momentum, stateBefore.longestMomentum);
   await gamificationRepo.updateMomentumAndLevel(supabase, userId, momentum, longestMomentum, newLevel);
-
-  if (eventType === "task_completed") {
-    const completedCount = await gamificationRepo.countXpEventsByType(supabase, userId, "task_completed");
-    if (completedCount === 1) {
-      const r = await gamificationRepo.unlockAchievement(supabase, userId, "FIRST_STEP");
-      if (r?.unlocked) unlocked.push(r.name);
-    }
-    if (completedCount >= 5) {
-      const r = await gamificationRepo.unlockAchievement(supabase, userId, "TINY_WINS");
-      if (r?.unlocked) unlocked.push(r.name);
-    }
-  }
-
-  if (momentum >= 3) {
-    const r = await gamificationRepo.unlockAchievement(supabase, userId, "MOMENTUM");
-    if (r?.unlocked) unlocked.push(r.name);
-  }
-
-  if (eventType === "focus_completed" && (context.focusMinutes ?? 0) >= 25) {
-    const r = await gamificationRepo.unlockAchievement(supabase, userId, "DEEP_FOCUS");
-    if (r?.unlocked) unlocked.push(r.name);
-  }
 
   return {
     xpAwarded,
@@ -181,4 +97,38 @@ export async function awardXp(
     isComeback: comeback,
     unlockedAchievements: unlocked,
   };
+}
+
+/** Combine two rewards from one user action into a single celebration. */
+export function mergeRewards(first: RewardResult | null, second: RewardResult | null): RewardResult | null {
+  if (!first) return second;
+  if (!second) return first;
+  return {
+    xpAwarded: first.xpAwarded + second.xpAwarded,
+    totalXp: second.totalXp,
+    leveledUp: first.leveledUp || second.leveledUp,
+    newLevel: second.newLevel,
+    momentum: second.momentum,
+    isComeback: first.isComeback || second.isComeback,
+    unlockedAchievements: [...first.unlockedAchievements, ...second.unlockedAchievements],
+  };
+}
+
+/** Grants the "welcome back" bonus on return itself, once per day. */
+export async function claimComeback(
+  supabase: SupabaseClient,
+  userId: string,
+  dateKey: string,
+  now: Date = new Date(),
+): Promise<number> {
+  const state = await gamificationRepo.getState(supabase, userId);
+  if (!isComeback(state.lastActivityAt, now)) return 0;
+  const granted = await gamificationRepo.recordXpEvent(
+    supabase,
+    userId,
+    "comeback",
+    dateKey,
+    XP_AMOUNTS.COMEBACK,
+  );
+  return granted ? XP_AMOUNTS.COMEBACK : 0;
 }

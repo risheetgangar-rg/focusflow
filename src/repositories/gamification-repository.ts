@@ -182,3 +182,76 @@ export async function incrementQuestProgress(
   if (error) throw error;
   return toQuest(data);
 }
+
+export async function hasRecentEvent(
+  supabase: SupabaseClient,
+  userId: string,
+  eventType: XpEventType,
+  withinHours: number,
+): Promise<boolean> {
+  const since = new Date(Date.now() - withinHours * 3_600_000).toISOString();
+  const { count, error } = await supabase
+    .from("xp_events")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("event_type", eventType)
+    .gte("created_at", since);
+  if (error) throw error;
+  return (count ?? 0) > 0;
+}
+
+export interface AchievementStatus {
+  code: string;
+  name: string;
+  description: string;
+  xpReward: number;
+  unlockedAt: string | null;
+}
+
+export async function listAchievementStatuses(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<AchievementStatus[]> {
+  const [{ data: all, error: allError }, { data: mine, error: mineError }] = await Promise.all([
+    supabase.from("achievements").select("id, code, name, description, xp_reward").order("xp_reward"),
+    supabase.from("user_achievements").select("achievement_id, unlocked_at").eq("user_id", userId),
+  ]);
+  if (allError) throw allError;
+  if (mineError) throw mineError;
+
+  const unlockedAt = new Map(mine.map((u) => [u.achievement_id as string, u.unlocked_at as string]));
+  return all.map((a) => ({
+    code: a.code,
+    name: a.name,
+    description: a.description,
+    xpReward: a.xp_reward,
+    unlockedAt: unlockedAt.get(a.id) ?? null,
+  }));
+}
+
+export interface XpLedgerEntry {
+  id: string;
+  eventType: string;
+  xpAmount: number;
+  createdAt: string;
+}
+
+export async function listRecentXpEvents(
+  supabase: SupabaseClient,
+  userId: string,
+  limit = 8,
+): Promise<XpLedgerEntry[]> {
+  const { data, error } = await supabase
+    .from("xp_events")
+    .select("id, event_type, xp_amount, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data.map((e) => ({
+    id: e.id,
+    eventType: e.event_type,
+    xpAmount: e.xp_amount,
+    createdAt: e.created_at,
+  }));
+}

@@ -1,24 +1,8 @@
+import { DEFAULT_TIMEZONE, getWeekDatesInTz, zonedDateString } from "@/lib/dates/tz";
 import type { HabitCompletion, HabitCompletionStatus } from "@/types/habit";
 
-function toLocalDateString(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-export function getWeekDates(reference: Date): string[] {
-  const day = reference.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(reference);
-  monday.setHours(0, 0, 0, 0);
-  monday.setDate(monday.getDate() + diffToMonday);
-
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(d.getDate() + i);
-    return toLocalDateString(d);
-  });
+export function getWeekDates(reference: Date, timezone: string = DEFAULT_TIMEZONE): string[] {
+  return getWeekDatesInTz(reference, timezone);
 }
 
 export interface WeeklyProgress {
@@ -45,6 +29,9 @@ export function weeklyProgress(
   return { completedCount, weekDates, statusByDate };
 }
 
-export function todayDateString(reference: Date = new Date()): string {
-  return toLocalDateString(reference);
+export function todayDateString(
+  reference: Date = new Date(),
+  timezone: string = DEFAULT_TIMEZONE,
+): string {
+  return zonedDateString(reference, timezone);
 }

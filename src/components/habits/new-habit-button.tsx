@@ -1,22 +1,31 @@
 "use client";
 
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { HabitForm } from "./habit-form";
+import { HabitDialog } from "./habit-dialog";
 
-export function NewHabitButton() {
+/** A button that opens the new-habit dialog. */
+export function NewHabitButton({
+  label = "New habit",
+  variant = "default",
+  size = "lg",
+  className,
+}: {
+  label?: string;
+  variant?: React.ComponentProps<typeof Button>["variant"];
+  size?: React.ComponentProps<typeof Button>["size"];
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button>New habit</Button>} />
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>New habit</DialogTitle>
-        </DialogHeader>
-        <HabitForm onSaved={() => setOpen(false)} />
-      </DialogContent>
-    </Dialog>
+    <>
+      <Button variant={variant} size={size} className={className} onClick={() => setOpen(true)}>
+        <Plus aria-hidden />
+        {label}
+      </Button>
+      <HabitDialog open={open} onOpenChange={setOpen} />
+    </>
   );
 }

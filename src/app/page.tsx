@@ -1,34 +1,12 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { buttonVariants } from "@/components/ui/button";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { getSession } from "@/lib/auth/session";
+import { Landing } from "@/components/marketing/landing";
 
-export default async function Home() {
-  const supabase = await createClient();
-  const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+export default async function HomePage() {
+  // Signed-in people go straight to the app. getSession() is null when signed out
+  // (or when Supabase isn't configured), and the landing page renders fine either way.
+  const session = await getSession();
+  if (session) redirect("/today");
 
-  // No backend connected yet -> this is a local demo, so skip login
-  // entirely and drop straight into the app.
-  if (!isSupabaseConfigured || user) {
-    redirect("/today");
-  }
-
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">FocusFlow</h1>
-        <p className="text-muted-foreground max-w-md">
-          Get everything out of your head, then find out what to do right now.
-        </p>
-      </div>
-      <div className="flex gap-3">
-        <Link href="/signup" className={buttonVariants()}>
-          Get started
-        </Link>
-        <Link href="/login" className={buttonVariants({ variant: "outline" })}>
-          Sign in
-        </Link>
-      </div>
-    </main>
-  );
+  return <Landing />;
 }

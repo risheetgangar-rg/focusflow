@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computeDailyStats, computeWeeklyStats } from "./review-service";
 import type { Task } from "@/types/task";
 
-const now = new Date("2026-09-08T18:00:00");
+const now = new Date("2026-09-08T18:00:00Z");
 
 function makeTask(overrides: Partial<Task> = {}): Task {
   return {
@@ -24,6 +24,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     recurrenceRule: null,
     startedAt: null,
     postponedCount: 0,
+    isBoss: false,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
     ...overrides,
@@ -32,8 +33,8 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 
 describe("computeDailyStats", () => {
   it("counts tasks completed today, not on other days", () => {
-    const today = makeTask({ status: "completed", completedAt: "2026-09-08T10:00:00" });
-    const yesterday = makeTask({ status: "completed", completedAt: "2026-09-07T10:00:00" });
+    const today = makeTask({ status: "completed", completedAt: "2026-09-08T10:00:00Z" });
+    const yesterday = makeTask({ status: "completed", completedAt: "2026-09-07T10:00:00Z" });
     const stats = computeDailyStats([today, yesterday], now);
     expect(stats.completedCount).toBe(1);
   });
@@ -56,17 +57,17 @@ describe("computeWeeklyStats", () => {
     const inWeek = makeTask({
       status: "completed",
       importance: 5,
-      completedAt: "2026-09-08T10:00:00",
+      completedAt: "2026-09-08T10:00:00Z",
     });
     const outOfWeek = makeTask({
       status: "completed",
       importance: 5,
-      completedAt: "2026-08-01T10:00:00",
+      completedAt: "2026-08-01T10:00:00Z",
     });
     const notImportant = makeTask({
       status: "completed",
       importance: 2,
-      completedAt: "2026-09-08T10:00:00",
+      completedAt: "2026-09-08T10:00:00Z",
     });
 
     const stats = computeWeeklyStats([inWeek, outOfWeek, notImportant], 3, "2026-09-07", "2026-09-13");

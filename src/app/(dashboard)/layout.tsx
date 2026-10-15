@@ -1,73 +1,43 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { signOut } from "../(auth)/actions";
-import { Button } from "@/components/ui/button";
-import { QuickAdd } from "@/components/layout/quick-add";
-import { LevelBadge } from "@/components/gamification/level-badge";
-import { BottomNav } from "@/components/layout/bottom-nav";
-import { Settings } from "lucide-react";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { getProfile } from "@/repositories/profile-repository";
-import * as gamificationRepo from "@/repositories/gamification-repository";
+import { AppSidebar } from "@/components/layout/app-sidebar";
+import { MobileNav } from "@/components/layout/mobile-nav";
+import { MobileTopBar } from "@/components/layout/mobile-top-bar";
+import { QuickAddProvider } from "@/components/layout/quick-add-provider";
+import { AppProviders } from "@/components/providers/app-providers";
+import { requireSession } from "@/lib/auth/session";
+import { getState } from "@/repositories/gamification-repository";
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+export default async function AppShellLayout({ children }: { children: React.ReactNode }) {
+  const session = await requireSession();
+  if (!session.profile.onboardingCompleted) redirect("/onboarding");
 
-  if (isSupabaseConfigured && !user) {
-    redirect("/login");
-  }
+  const { profile, supabase, userId, email, isGuest } = session;
+  const game =
+    profile.gamificationMode === "off"
+      ? { xp: 0, currentMomentum: 0 }
+      : await getState(supabase, userId);
 
-  let showGamification = false;
-  let gamificationState: { xp: number; currentMomentum: number } | null = null;
-  if (supabase && user) {
-    const profile = await getProfile(supabase, user.id);
-    showGamification = profile?.gamificationMode !== "off";
-    if (showGamification) {
-      const state = await gamificationRepo.getState(supabase, user.id);
-      gamificationState = { xp: state.xp, currentMomentum: state.currentMomentum };
-    }
-  }
+  const identity = {
+    displayName: profile.displayName,
+    email,
+    isGuest,
+    mode: profile.gamificationMode,
+    xp: game.xp,
+    momentum: game.currentMomentum,
+  };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      {!isSupabaseConfigured && (
-        <div className="bg-amber-100 px-6 py-2 text-center text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-          Local demo — Supabase isn&apos;t connected yet, so accounts and data aren&apos;t real.
+    <AppProviders>
+      <QuickAddProvider>
+        <AppSidebar {...identity} />
+        <div className="flex min-h-dvh flex-col lg:pl-[17rem]">
+          <MobileTopBar {...identity} />
+          <main id="main" className="w-full flex-1 px-5 pt-8 pb-32 sm:px-8 lg:px-12 lg:pt-12 lg:pb-16">
+            {children}
+          </main>
         </div>
-      )}
-      <header className="flex items-center justify-between border-b px-4 py-4 sm:px-6">
-        <nav className="hidden flex-wrap gap-4 text-sm font-medium sm:flex">
-          <Link href="/today">Today</Link>
-          <Link href="/tasks">Tasks</Link>
-          <Link href="/habits">Habits</Link>
-          <Link href="/brain-dump">Brain dump</Link>
-          <Link href="/rescue">Rescue</Link>
-          <Link href="/review">Review</Link>
-          <Link href="/settings">Settings</Link>
-        </nav>
-        <Link href="/today" className="text-sm font-semibold sm:hidden">
-          FocusFlow
-        </Link>
-        <div className="flex items-center gap-3">
-          {gamificationState && (
-            <LevelBadge xp={gamificationState.xp} momentum={gamificationState.currentMomentum} />
-          )}
-          <QuickAdd />
-          <Link href="/settings" className="sm:hidden" aria-label="Settings">
-            <Settings size={18} />
-          </Link>
-          {isSupabaseConfigured && (
-            <form action={signOut}>
-              <Button type="submit" variant="ghost" size="sm">
-                Sign out
-              </Button>
-            </form>
-          )}
-        </div>
-      </header>
-      <main className="flex-1 p-6 pb-20 sm:pb-6">{children}</main>
-      <BottomNav />
-    </div>
+        <MobileNav />
+      </QuickAddProvider>
+    </AppProviders>
   );
 }

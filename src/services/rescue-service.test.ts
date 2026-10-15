@@ -24,6 +24,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     recurrenceRule: null,
     startedAt: null,
     postponedCount: 0,
+    isBoss: false,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
     ...overrides,

@@ -11,20 +11,49 @@ const PROTECTED_PREFIXES = [
   "/focus",
   "/brain-dump",
   "/voice",
+  "/rewards",
+  "/onboarding",
 ];
+
+/** Pages for people who haven't signed in yet; signed-in (non-guest) visitors are sent on to the app. */
+const SIGNED_OUT_ONLY = ["/login", "/signup", "/forgot-password"];
+
+function matches(pathname: string, prefixes: string[]) {
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+/** A redirect that still carries any session cookies refreshed during this request. */
+function redirectTo(url: URL, from: NextResponse) {
+  const response = NextResponse.redirect(url);
+  from.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+  return response;
+}
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    // Supabase isn't configured yet — run as an unauthenticated local demo
-    // instead of crashing every request.
+    // Supabase isn't configured yet. Let every page render (they explain the setup).
     return response;
   }
 
+  const { pathname, search } = request.nextUrl;
+  const isProtected = matches(pathname, PROTECTED_PREFIXES);
+
+  // No auth cookie means no session to refresh: skip the Supabase round trip entirely.
+  const hasAuthCookie = request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+  if (!hasAuthCookie) {
+    if (!isProtected) return response;
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    url.searchParams.set("next", `${pathname}${search}`);
+    return NextResponse.redirect(url);
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -33,26 +62,35 @@ export async function updateSession(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
         },
       },
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Verifies the JWT locally (and refreshes it when it has expired) instead of a network call per request.
+  let claims: { sub?: string; is_anonymous?: boolean } | null = null;
+  try {
+    const { data } = await supabase.auth.getClaims();
+    claims = data?.claims ?? null;
+  } catch {
+    claims = null; // Treated as signed out; the next request will try again.
+  }
+  const signedIn = Boolean(claims?.sub);
 
-  const pathname = request.nextUrl.pathname;
-  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-
-  if (isProtected && !user) {
+  if (isProtected && !signedIn) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    url.search = "";
+    url.searchParams.set("next", `${pathname}${search}`);
+    return redirectTo(url, response);
+  }
+
+  if (signedIn && claims?.is_anonymous !== true && matches(pathname, SIGNED_OUT_ONLY)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/today";
+    url.search = "";
+    return redirectTo(url, response);
   }
 
   return response;

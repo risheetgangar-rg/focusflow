@@ -1,35 +1,43 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import * as taskRepo from "@/repositories/task-repository";
+import { getSession } from "@/lib/auth/session";
+import { XP_AMOUNTS } from "@/lib/gamification/rules";
+import { track } from "@/services/analytics-service";
+import { EMPTY_OUTCOME } from "@/services/completion-service";
+import { awardXp } from "@/services/gamification-service";
+import { todayDateString } from "@/services/habit-service";
 import * as taskService from "@/services/task-service";
 import type { RescheduleTarget } from "@/services/task-service";
-import * as gamificationService from "@/services/gamification-service";
-import { todayDateString } from "@/services/habit-service";
+import type { CompletionOutcome } from "@/types/gamification";
 
-export async function rescheduleRestAction(taskIds: string[], target: RescheduleTarget) {
-  const supabase = await createClient();
-  if (!supabase) return;
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return;
+/** Moves everything outside the recovery set. Rewards the decluttering itself, once a day. */
+export async function rescheduleRestAction(
+  taskIds: string[],
+  target: RescheduleTarget,
+): Promise<CompletionOutcome> {
+  const session = await getSession();
+  if (!session) return EMPTY_OUTCOME;
+  const { supabase, userId, timezone, profile } = session;
 
-  const date = taskService.resolveRescheduleDate(target);
-  for (const taskId of taskIds) {
-    await taskRepo.rescheduleTask(supabase, taskId, date.toISOString());
+  const date = taskService.resolveRescheduleDate(target, undefined, timezone);
+  await Promise.all(taskIds.map((taskId) => taskService.moveTask(supabase, taskId, date)));
+  await track(supabase, userId, "rescue_completed", { moved: taskIds.length, target });
+
+  let outcome = EMPTY_OUTCOME;
+  if (profile.gamificationMode !== "off") {
+    const reward = await awardXp(supabase, userId, {
+      type: "rescue_action",
+      sourceId: todayDateString(new Date(), timezone),
+      xp: XP_AMOUNTS.RESCUE_ACTION,
+      timezone,
+      achievements: profile.gamificationMode === "full",
+    });
+    outcome = { ...EMPTY_OUTCOME, reward };
   }
-
-  await gamificationService.awardXp(
-    supabase,
-    user.id,
-    "rescue_action",
-    todayDateString(),
-    gamificationService.XP_AMOUNTS.RESCUE_ACTION,
-  );
 
   revalidatePath("/tasks");
   revalidatePath("/today");
   revalidatePath("/rescue");
+  return outcome;
 }

@@ -68,7 +68,14 @@ export async function listHabits(supabase: SupabaseClient, userId: string): Prom
 export async function createHabit(
   supabase: SupabaseClient,
   userId: string,
-  input: { name: string; description?: string | null; color: string; targetCount: number },
+  input: {
+    name: string;
+    description?: string | null;
+    color: string;
+    targetCount: number;
+    reminderEnabled?: boolean;
+    reminderTime?: string | null;
+  },
 ): Promise<Habit> {
   const { data, error } = await supabase
     .from("habits")
@@ -78,6 +85,8 @@ export async function createHabit(
       description: input.description ?? null,
       color: input.color,
       target_count: input.targetCount,
+      reminder_enabled: input.reminderEnabled ?? false,
+      reminder_time: input.reminderTime ?? null,
     })
     .select("*")
     .single();
@@ -89,7 +98,14 @@ export async function createHabit(
 export async function updateHabit(
   supabase: SupabaseClient,
   habitId: string,
-  updates: Partial<{ name: string; description: string | null; color: string; targetCount: number }>,
+  updates: Partial<{
+    name: string;
+    description: string | null;
+    color: string;
+    targetCount: number;
+    reminderEnabled: boolean;
+    reminderTime: string | null;
+  }>,
 ): Promise<Habit> {
   const { data, error } = await supabase
     .from("habits")
@@ -98,6 +114,8 @@ export async function updateHabit(
       ...(updates.description !== undefined && { description: updates.description }),
       ...(updates.color !== undefined && { color: updates.color }),
       ...(updates.targetCount !== undefined && { target_count: updates.targetCount }),
+      ...(updates.reminderEnabled !== undefined && { reminder_enabled: updates.reminderEnabled }),
+      ...(updates.reminderTime !== undefined && { reminder_time: updates.reminderTime }),
     })
     .eq("id", habitId)
     .select("*")

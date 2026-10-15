@@ -20,6 +20,7 @@ interface TaskRow {
   recurrence_rule: string | null;
   started_at: string | null;
   postponed_count: number;
+  is_boss: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -34,6 +35,8 @@ interface SubtaskRow {
   created_at: string;
   updated_at: string;
 }
+
+const SUBTASK_CHUNK = 80;
 
 function toTask(row: TaskRow): Task {
   return {
@@ -55,6 +58,7 @@ function toTask(row: TaskRow): Task {
     recurrenceRule: row.recurrence_rule as Task["recurrenceRule"],
     startedAt: row.started_at,
     postponedCount: row.postponed_count,
+    isBoss: row.is_boss,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -85,6 +89,8 @@ function toRow(input: Partial<TaskInput>) {
     ...(input.dueAt !== undefined && { due_at: input.dueAt }),
     ...(input.scheduledAt !== undefined && { scheduled_at: input.scheduledAt }),
     ...(input.recurrenceRule !== undefined && { recurrence_rule: input.recurrenceRule }),
+    ...(input.isBoss !== undefined && { is_boss: input.isBoss }),
+    ...(input.parentTaskId !== undefined && { parent_task_id: input.parentTaskId }),
   };
 }
 
@@ -93,6 +99,26 @@ export async function listTasks(supabase: SupabaseClient, userId: string): Promi
     .from("tasks")
     .select("*")
     .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data as TaskRow[]).map(toTask);
+}
+
+/**
+ * Everything still open plus what was finished recently. Skips deleted tasks
+ * and old completions so the dashboards stay fast as history piles up.
+ */
+export async function listVisibleTasks(
+  supabase: SupabaseClient,
+  userId: string,
+  completedSince: Date,
+): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("user_id", userId)
+    .or(`status.eq.pending,and(status.eq.completed,completed_at.gte.${completedSince.toISOString()})`)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -138,6 +164,31 @@ export async function updateTask(
 
 export async function deleteTask(supabase: SupabaseClient, taskId: string): Promise<void> {
   const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+  if (error) throw error;
+}
+
+/** The next occurrence already generated for a recurring task, if any. */
+export async function findRecurringChild(supabase: SupabaseClient, parentId: string): Promise<Task | null> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("parent_task_id", parentId)
+    .eq("source", "recurring")
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toTask(data) : null;
+}
+
+/** Undoing a completion takes back the next occurrence it generated, as long as nobody has started it. */
+export async function deleteUntouchedRecurringChildren(supabase: SupabaseClient, parentId: string): Promise<void> {
+  const { error } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("parent_task_id", parentId)
+    .eq("source", "recurring")
+    .eq("status", "pending")
+    .is("started_at", null);
   if (error) throw error;
 }
 
@@ -212,14 +263,23 @@ export async function listSubtasksForTasks(
   taskIds: string[],
 ): Promise<Subtask[]> {
   if (taskIds.length === 0) return [];
-  const { data, error } = await supabase
-    .from("task_subtasks")
-    .select("*")
-    .in("task_id", taskIds)
-    .order("position", { ascending: true });
 
-  if (error) throw error;
-  return (data as SubtaskRow[]).map(toSubtask);
+  // Chunked so a long task list can't push the request URL past the server's limit.
+  const chunks: string[][] = [];
+  for (let i = 0; i < taskIds.length; i += SUBTASK_CHUNK) chunks.push(taskIds.slice(i, i + SUBTASK_CHUNK));
+
+  const pages = await Promise.all(
+    chunks.map(async (ids) => {
+      const { data, error } = await supabase
+        .from("task_subtasks")
+        .select("*")
+        .in("task_id", ids)
+        .order("position", { ascending: true });
+      if (error) throw error;
+      return (data as SubtaskRow[]).map(toSubtask);
+    }),
+  );
+  return pages.flat();
 }
 
 export async function createSubtask(

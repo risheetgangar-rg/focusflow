@@ -1,62 +1,35 @@
-import { createClient } from "@/lib/supabase/server";
+import type { Metadata } from "next";
+import { AddTaskButtons } from "@/components/tasks/add-task-buttons";
+import { TasksView } from "@/components/tasks/tasks-view";
+import { requireSession } from "@/lib/auth/session";
+import { groupSubtasks } from "@/lib/tasks/group";
 import * as taskRepo from "@/repositories/task-repository";
-import { NewTaskButton } from "@/components/tasks/new-task-button";
-import { TaskList } from "@/components/tasks/task-list";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Subtask, Task } from "@/types/task";
+
+export const metadata: Metadata = { title: "Tasks" };
+
+const DAY_MS = 86_400_000;
 
 export default async function TasksPage() {
-  const supabase = await createClient();
-  if (!supabase) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Tasks</h1>
-        <p className="text-muted-foreground">Connect Supabase to manage tasks here.</p>
-      </div>
-    );
-  }
+  const { supabase, userId } = await requireSession();
+  const now = new Date();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return null;
-  }
-
-  const tasks = await taskRepo.listTasks(supabase, user.id);
+  const tasks = await taskRepo.listVisibleTasks(supabase, userId, new Date(now.getTime() - 14 * DAY_MS));
   const subtasks = await taskRepo.listSubtasksForTasks(
     supabase,
     tasks.map((t) => t.id),
   );
-  const subtasksByTask = new Map<string, Subtask[]>();
-  for (const subtask of subtasks) {
-    const list = subtasksByTask.get(subtask.taskId) ?? [];
-    list.push(subtask);
-    subtasksByTask.set(subtask.taskId, list);
-  }
-
-  const active = tasks.filter((t: Task) => t.status === "pending");
-  const completed = tasks.filter((t: Task) => t.status === "completed");
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Tasks</h1>
-        <NewTaskButton />
-      </div>
+    <div className="mx-auto w-full max-w-4xl">
+      <header className="animate-rise mb-8 flex flex-wrap items-end justify-between gap-4 sm:mb-10">
+        <div>
+          <p className="text-eyebrow text-muted-foreground">Everything on your list</p>
+          <h1 className="mt-2 font-display text-5xl leading-none sm:text-7xl">Tasks</h1>
+        </div>
+        <AddTaskButtons />
+      </header>
 
-      <Tabs defaultValue="active">
-        <TabsList>
-          <TabsTrigger value="active">Active ({active.length})</TabsTrigger>
-          <TabsTrigger value="completed">Completed ({completed.length})</TabsTrigger>
-        </TabsList>
-        <TabsContent value="active">
-          <TaskList tasks={active} subtasksByTask={subtasksByTask} />
-        </TabsContent>
-        <TabsContent value="completed">
-          <TaskList tasks={completed} subtasksByTask={subtasksByTask} />
-        </TabsContent>
-      </Tabs>
+      <TasksView tasks={tasks} subtasksByTask={groupSubtasks(subtasks)} nowIso={now.toISOString()} />
     </div>
   );
 }

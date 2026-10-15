@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/auth/session";
 import * as taskRepo from "@/repositories/task-repository";
-import { computeDailyStats, saveReview } from "@/services/review-service";
 import { todayDateString } from "@/services/habit-service";
+import { computeDailyStats, saveReview } from "@/services/review-service";
 
 export interface ReviewState {
   error?: string;
@@ -15,20 +15,21 @@ export async function saveReflectionAction(
   _prevState: ReviewState,
   formData: FormData,
 ): Promise<ReviewState> {
-  const supabase = await createClient();
-  if (!supabase) return { error: "Supabase isn't connected yet — this is a local demo." };
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not signed in." };
+  const session = await getSession();
+  if (!session) return { error: "Please sign in again." };
 
   const reflection = String(formData.get("reflection") || "").trim();
   const now = new Date();
-  const tasks = await taskRepo.listTasks(supabase, user.id);
-  const stats = computeDailyStats(tasks, now);
+  const tasks = await taskRepo.listTasks(session.supabase, session.userId);
+  const stats = computeDailyStats(tasks, now, session.timezone);
 
-  await saveReview(supabase, user.id, todayDateString(now), stats, reflection || null);
+  await saveReview(
+    session.supabase,
+    session.userId,
+    todayDateString(now, session.timezone),
+    stats,
+    reflection || null,
+  );
   revalidatePath("/review");
   return { message: "Saved." };
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/auth/session";
 import * as reminderRepo from "@/repositories/reminder-repository";
 
 export interface NotificationPrefsState {
@@ -13,18 +13,13 @@ export async function updateNotificationPrefsAction(
   _prevState: NotificationPrefsState,
   formData: FormData,
 ): Promise<NotificationPrefsState> {
-  const supabase = await createClient();
-  if (!supabase) return { error: "Supabase isn't connected yet — this is a local demo." };
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not signed in." };
+  const session = await getSession();
+  if (!session) return { error: "Please sign in again." };
 
   const quietHoursStart = String(formData.get("quietHoursStart") || "");
   const quietHoursEnd = String(formData.get("quietHoursEnd") || "");
 
-  await reminderRepo.updatePreferences(supabase, user.id, {
+  await reminderRepo.updatePreferences(session.supabase, session.userId, {
     notifyTaskReminders: formData.get("notifyTaskReminders") === "on",
     notifyHabitReminders: formData.get("notifyHabitReminders") === "on",
     notifyDeadlineReminders: formData.get("notifyDeadlineReminders") === "on",

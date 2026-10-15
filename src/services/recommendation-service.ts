@@ -5,6 +5,8 @@ export interface RecommendationContext {
   now: Date;
   /** Minutes the user says they have available right now, if known. */
   availableMinutes?: number;
+  /** IANA timezone used for "due today" wording; defaults to UTC. */
+  timezone?: string;
 }
 
 export interface Recommendation {
@@ -78,20 +80,34 @@ function buildReason(task: Task, context: RecommendationContext): string {
     const diffHours = (new Date(task.scheduledAt).getTime() - now.getTime()) / 3_600_000;
     if (diffHours <= 0 && diffHours > -2) return "Scheduled for now";
   }
-  if (task.dueAt && isDueToday(task.dueAt, now)) return "Due today";
+  if (task.dueAt && isDueToday(task.dueAt, now, context.timezone)) return "Due today";
   if (task.urgency >= 4) return "Urgent";
   if (task.importance >= 4) return "Important";
   if (task.postponedCount >= 2) return "Keeps getting pushed back";
   return "Next up";
 }
 
-export function recommendNext(tasks: Task[], context: RecommendationContext): Recommendation | null {
-  const pending = tasks.filter((t) => t.status === "pending");
-  if (pending.length === 0) return null;
+const WAITING_GRACE_MS = 10 * 60_000;
 
-  const [top] = pending
+/**
+ * Snoozed or planned for later: it has a start time that hasn't arrived yet.
+ * "What's next" leaves these alone until their time is close, so snoozing a
+ * task (or moving it to tomorrow) actually gets it out of the way.
+ */
+export function isWaiting(task: Pick<Task, "scheduledAt">, now: Date): boolean {
+  return task.scheduledAt !== null && new Date(task.scheduledAt).getTime() - now.getTime() > WAITING_GRACE_MS;
+}
+
+/** The best few tasks to do right now, best first. recommendNext is simply the first of these. */
+export function recommendTop(tasks: Task[], context: RecommendationContext, limit = 3): Recommendation[] {
+  return tasks
+    .filter((t) => t.status === "pending" && !isWaiting(t, context.now))
     .map((task) => ({ task, score: scoreTask(task, context) }))
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(({ task, score }) => ({ task, score, reason: buildReason(task, context) }));
+}
 
-  return { task: top.task, score: top.score, reason: buildReason(top.task, context) };
+export function recommendNext(tasks: Task[], context: RecommendationContext): Recommendation | null {
+  return recommendTop(tasks, context, 1)[0] ?? null;
 }

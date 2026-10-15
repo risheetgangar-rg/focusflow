@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { recommendNext, scoreTask } from "./recommendation-service";
+import { isWaiting, recommendNext, recommendTop, scoreTask } from "./recommendation-service";
 import type { Task } from "@/types/task";
 
 const now = new Date("2026-09-08T12:00:00Z");
@@ -24,6 +24,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     recurrenceRule: null,
     startedAt: null,
     postponedCount: 0,
+    isBoss: false,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
     ...overrides,
@@ -98,5 +99,55 @@ describe("recommendNext", () => {
     const pending = makeTask({ id: "b", urgency: 2 });
     const result = recommendNext([completed, pending], { now });
     expect(result?.task.id).toBe("b");
+  });
+});
+
+describe("recommendTop", () => {
+  it("returns the best few in order, and recommendNext is the first", () => {
+    const tasks = [
+      makeTask({ id: "low", urgency: 1, importance: 1 }),
+      makeTask({ id: "high", urgency: 5, importance: 5 }),
+      makeTask({ id: "mid", urgency: 3, importance: 3 }),
+    ];
+    const top = recommendTop(tasks, { now }, 2);
+    expect(top.map((r) => r.task.id)).toEqual(["high", "mid"]);
+    expect(recommendNext(tasks, { now })?.task.id).toBe("high");
+  });
+
+  it("re-ranks when the user says how much time they have", () => {
+    const tasks = [
+      makeTask({ id: "long", urgency: 4, importance: 4, estimatedMinutes: 90 }),
+      makeTask({ id: "quick", urgency: 3, importance: 3, estimatedMinutes: 5 }),
+    ];
+    expect(recommendTop(tasks, { now }, 1)[0].task.id).toBe("long");
+    expect(recommendTop(tasks, { now, availableMinutes: 10 }, 1)[0].task.id).toBe("quick");
+  });
+});
+
+describe("snoozed and planned-for-later tasks", () => {
+  const at = (minutesFromNow: number) => new Date(now.getTime() + minutesFromNow * 60_000).toISOString();
+
+  it("leaves a task alone until its start time is close", () => {
+    const snoozed = makeTask({ id: "snoozed", urgency: 5, importance: 5, scheduledAt: at(60) });
+    const other = makeTask({ id: "other", urgency: 1, importance: 1 });
+    expect(recommendNext([snoozed, other], { now })?.task.id).toBe("other");
+    expect(isWaiting(snoozed, now)).toBe(true);
+  });
+
+  it("brings it back once its time arrives", () => {
+    const soon = makeTask({ id: "soon", urgency: 5, importance: 5, scheduledAt: at(5) });
+    const other = makeTask({ id: "other", urgency: 1, importance: 1 });
+    expect(recommendNext([soon, other], { now })?.task.id).toBe("soon");
+    expect(isWaiting(soon, now)).toBe(false);
+  });
+
+  it("never hides a task that was planned for earlier", () => {
+    const past = makeTask({ id: "past", scheduledAt: at(-120) });
+    expect(isWaiting(past, now)).toBe(false);
+    expect(recommendNext([past], { now })?.task.id).toBe("past");
+  });
+
+  it("returns nothing when everything is waiting", () => {
+    expect(recommendNext([makeTask({ scheduledAt: at(300) })], { now })).toBeNull();
   });
 });

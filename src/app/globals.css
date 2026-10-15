@@ -5,11 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-display: var(--font-display-serif), "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-heading: var(--font-sans);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,92 +41,372 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-surface: var(--surface);
+  --color-tint-lavender: var(--tint-lavender);
+  --color-tint-mint: var(--tint-mint);
+  --color-tint-peach: var(--tint-peach);
+  --color-tint-butter: var(--tint-butter);
+  --color-tint-sky: var(--tint-sky);
+  --color-tint-rose: var(--tint-rose);
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: calc(var(--radius) * 1.25);
+  --radius-2xl: calc(var(--radius) * 1.5);
+  --radius-3xl: calc(var(--radius) * 2);
+  --radius-4xl: calc(var(--radius) * 2.5);
+
+  --shadow-soft: 0 1px 2px rgb(20 20 18 / 0.04), 0 10px 30px -14px rgb(20 20 18 / 0.14);
+  --shadow-lift: 0 2px 4px rgb(20 20 18 / 0.05), 0 22px 50px -20px rgb(20 20 18 / 0.28);
+
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-float-slow: float 11s ease-in-out infinite;
+  --animate-breathe: breathe 5s ease-in-out infinite;
+  --animate-pop: pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-rise: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-pan: pan 18s ease-in-out infinite;
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+/* ---------- Themes. Paper is the default; the rest are unlockable cosmetics. ---------- */
+
+:root,
+[data-theme="paper"] {
+  --background: #faf9f6;
+  --foreground: #171715;
+  --card: #ffffff;
+  --card-foreground: #171715;
+  --popover: #ffffff;
+  --popover-foreground: #171715;
+  --primary: #171715;
+  --primary-foreground: #faf9f6;
+  --secondary: #f1efe9;
+  --secondary-foreground: #171715;
+  --muted: #f1efe9;
+  --muted-foreground: #6b6962;
+  --accent: #ece9e1;
+  --accent-foreground: #171715;
+  --destructive: #cf4a31;
+  --border: #e8e5dd;
+  --input: #dfdcd3;
+  --ring: #5b4bf0;
+  --brand: #5b4bf0;
+  --brand-foreground: #ffffff;
+  --brand-soft: #ece9ff;
+  --surface: #f4f2ed;
+  --tint-lavender: #ece9ff;
+  --tint-mint: #def3e6;
+  --tint-peach: #ffe7d6;
+  --tint-butter: #fff3c4;
+  --tint-sky: #dcebff;
+  --tint-rose: #ffe1e6;
+  --chart-1: #5b4bf0;
+  --chart-2: #3f9d6b;
+  --chart-3: #e8883a;
+  --chart-4: #3b82c4;
+  --chart-5: #d4537e;
+  --radius: 1rem;
+  --sidebar: #f4f2ed;
+  --sidebar-foreground: #171715;
+  --sidebar-primary: #171715;
+  --sidebar-primary-foreground: #faf9f6;
+  --sidebar-accent: #e9e6de;
+  --sidebar-accent-foreground: #171715;
+  --sidebar-border: #e6e3da;
+  --sidebar-ring: #5b4bf0;
+  color-scheme: light;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+[data-theme="midnight"] {
+  --background: #0e0e10;
+  --foreground: #f4f2ee;
+  --card: #17171a;
+  --card-foreground: #f4f2ee;
+  --popover: #1b1b1f;
+  --popover-foreground: #f4f2ee;
+  --primary: #f4f2ee;
+  --primary-foreground: #0e0e10;
+  --secondary: #1f1f23;
+  --secondary-foreground: #f4f2ee;
+  --muted: #1f1f23;
+  --muted-foreground: #9d9ba3;
+  --accent: #28282e;
+  --accent-foreground: #f4f2ee;
+  --destructive: #ef6a52;
+  --border: #2a2a30;
+  --input: #36363d;
+  --ring: #8f86ff;
+  --brand: #8f86ff;
+  --brand-foreground: #0e0e10;
+  --brand-soft: #25224a;
+  --surface: #131316;
+  --tint-lavender: #26234a;
+  --tint-mint: #16302a;
+  --tint-peach: #3a2619;
+  --tint-butter: #38301a;
+  --tint-sky: #1a2a40;
+  --tint-rose: #3a1f27;
+  --chart-1: #8f86ff;
+  --chart-2: #5ccf95;
+  --chart-3: #f0a05a;
+  --chart-4: #6aa8ea;
+  --chart-5: #ee7fa3;
+  --sidebar: #131316;
+  --sidebar-foreground: #f4f2ee;
+  --sidebar-primary: #f4f2ee;
+  --sidebar-primary-foreground: #0e0e10;
+  --sidebar-accent: #222227;
+  --sidebar-accent-foreground: #f4f2ee;
+  --sidebar-border: #26262b;
+  --sidebar-ring: #8f86ff;
+  color-scheme: dark;
 }
+
+[data-theme="sage"] {
+  --background: #f3f6f0;
+  --foreground: #17231b;
+  --card: #fcfdfb;
+  --primary: #1b2b21;
+  --primary-foreground: #f3f6f0;
+  --secondary: #e8eee4;
+  --muted: #e8eee4;
+  --muted-foreground: #5f6e5f;
+  --accent: #dfe8da;
+  --border: #dde6d7;
+  --input: #d3ddcc;
+  --ring: #3f7d58;
+  --brand: #3f7d58;
+  --brand-foreground: #ffffff;
+  --brand-soft: #dcefe3;
+  --surface: #eaf0e6;
+  --tint-lavender: #e4eaf7;
+  --tint-mint: #d5efdd;
+  --tint-peach: #fbe6d3;
+  --tint-butter: #f6f0c6;
+  --tint-sky: #d8ecf0;
+  --tint-rose: #f7dfe0;
+  --sidebar: #eaf0e6;
+  --sidebar-accent: #dbe5d5;
+  --sidebar-border: #d9e3d3;
+  --sidebar-ring: #3f7d58;
+}
+
+[data-theme="dusk"] {
+  --background: #f6f3fb;
+  --foreground: #211a33;
+  --card: #fdfcff;
+  --primary: #2b1d47;
+  --primary-foreground: #f6f3fb;
+  --secondary: #ece6f6;
+  --muted: #ece6f6;
+  --muted-foreground: #6b6283;
+  --accent: #e4dcf2;
+  --border: #e4ddf0;
+  --input: #d9d0ea;
+  --ring: #7c3aed;
+  --brand: #7c3aed;
+  --brand-foreground: #ffffff;
+  --brand-soft: #ede4ff;
+  --surface: #eee9f7;
+  --tint-lavender: #e9defe;
+  --tint-mint: #dcf0ea;
+  --tint-peach: #fde3dc;
+  --tint-butter: #f8efc8;
+  --tint-sky: #dde6fb;
+  --tint-rose: #f9dcea;
+  --sidebar: #eee9f7;
+  --sidebar-accent: #e2daf1;
+  --sidebar-border: #e2daef;
+  --sidebar-ring: #7c3aed;
+}
+
+[data-theme="sunrise"] {
+  --background: #fdf6ef;
+  --foreground: #2b1b12;
+  --card: #fffdfb;
+  --primary: #3a2316;
+  --primary-foreground: #fdf6ef;
+  --secondary: #f7ece1;
+  --muted: #f7ece1;
+  --muted-foreground: #7b6757;
+  --accent: #f1e2d3;
+  --border: #f0e2d4;
+  --input: #e8d6c4;
+  --ring: #e8590c;
+  --brand: #e8590c;
+  --brand-foreground: #ffffff;
+  --brand-soft: #ffe6d4;
+  --surface: #f8eee3;
+  --tint-lavender: #efe6fb;
+  --tint-mint: #def1df;
+  --tint-peach: #ffe2cc;
+  --tint-butter: #fff0bd;
+  --tint-sky: #dceaf7;
+  --tint-rose: #ffdfdc;
+  --sidebar: #f8eee3;
+  --sidebar-accent: #f0e1d1;
+  --sidebar-border: #efe0d1;
+  --sidebar-ring: #e8590c;
+}
+
+/* ---------- Base ---------- */
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply font-sans antialiased;
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
   }
-  html {
-    @apply font-sans;
+  ::selection {
+    background: var(--brand-soft);
+    color: var(--foreground);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+}
+
+/* ---------- Utilities ---------- */
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+  .text-eyebrow {
+    @apply text-xs font-medium tracking-[0.14em] uppercase text-muted-foreground;
+  }
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  .shadow-lift {
+    box-shadow: var(--shadow-lift);
+  }
+  .bg-grain {
+    position: relative;
+    isolation: isolate;
+  }
+  .bg-grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.35;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1.5deg);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Respect people who've asked their device for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes ring-fill {
+  from {
+    stroke-dashoffset: var(--ring-circ);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+/* Landing "orbit": the kinetic type column scrolls forever inside its card. */
+@keyframes type-scroll {
+  to {
+    transform: translateY(-50%);
   }
 }

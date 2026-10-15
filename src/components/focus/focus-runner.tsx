@@ -1,223 +1,184 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, m } from "motion/react";
 import {
   completeSubtaskStepAction,
   completeTaskStepAction,
   endFocusSessionAction,
   startFocusSessionAction,
 } from "@/app/focus/actions";
-import { addSubtaskAction } from "@/app/(dashboard)/tasks/actions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { RewardFeedback } from "@/components/gamification/reward-feedback";
-import type { RewardResult } from "@/services/gamification-service";
+import { FocusDone } from "@/components/focus/focus-done";
+import { EXTEND_MINUTES, focusEyebrow, mergeOutcomes, planFocus, type FocusStep } from "@/components/focus/focus-logic";
+import { FocusSession } from "@/components/focus/focus-session";
+import { FocusHeader, FocusStage } from "@/components/focus/focus-stage";
+import { FocusStart } from "@/components/focus/focus-start";
+import { FocusUnavailable } from "@/components/focus/focus-unavailable";
+import { useFocusClock } from "@/components/focus/use-focus-clock";
+import { useCelebration } from "@/components/gamification/celebration-provider";
+import type { CompletionOutcome } from "@/types/gamification";
 import type { Subtask, Task } from "@/types/task";
 
-interface Step {
-  id: string | null;
-  title: string;
-}
+type Phase = "start" | "focus" | "done";
+type Busy = "completing" | "leaving" | null;
 
-const TIMER_OPTIONS = [
-  { label: "No timer", minutes: null },
-  { label: "5 min", minutes: 5 },
-  { label: "10 min", minutes: 10 },
-  { label: "15 min", minutes: 15 },
-  { label: "25 min", minutes: 25 },
-];
+const phaseMotion = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -12 },
+  transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
+};
 
-function formatSeconds(totalSeconds: number) {
-  const sign = totalSeconds < 0 ? "-" : "";
-  const abs = Math.abs(totalSeconds);
-  const m = Math.floor(abs / 60);
-  const s = abs % 60;
-  return `${sign}${m}:${String(s).padStart(2, "0")}`;
-}
-
+/**
+ * Focus Mode: start (pick a timer, or don't), focus (one step at a time),
+ * done. It's the only thing on the screen: no backlog, no other tasks.
+ */
 export function FocusRunner({ task, subtasks }: { task: Task; subtasks: Subtask[] }) {
   const router = useRouter();
-  const steps: Step[] =
-    subtasks.length > 0
-      ? subtasks.map((s) => ({ id: s.id, title: s.title }))
-      : [{ id: null, title: task.title }];
+  const { celebrate } = useCelebration();
+  const clock = useFocusClock();
 
-  const firstIncomplete = subtasks.findIndex((s) => !s.completed);
-  const [stepIndex, setStepIndex] = useState(firstIncomplete === -1 ? 0 : firstIncomplete);
-  const [mode, setMode] = useState<"start" | "focus" | "done">("start");
-  const [plannedMinutes, setPlannedMinutes] = useState<number | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [paused, setPaused] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [newStepTitle, setNewStepTitle] = useState("");
-  const [doneReward, setDoneReward] = useState<RewardResult | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Decided once, on arrival. Finishing the task here re-renders this page with the
+  // task marked complete, and that must not swap the "Nice work" screen for "Already done".
+  const [arrivedAs] = useState(task.status);
 
-  useEffect(() => {
-    if (mode !== "focus" || paused) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      return;
-    }
-    intervalRef.current = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [mode, paused]);
+  const [phase, setPhase] = useState<Phase>("start");
+  const [doneKeys, setDoneKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const [skipped, setSkipped] = useState<readonly string[]>([]);
+  // The step being finished, held in place while the server catches up so the screen doesn't flicker.
+  const [pinned, setPinned] = useState<FocusStep | null>(null);
+  const [limitMs, setLimitMs] = useState<number | null>(null);
+  const [segmentStartMs, setSegmentStartMs] = useState(0);
+  const [busy, setBusy] = useState<Busy>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [outcome, setOutcome] = useState<CompletionOutcome | null>(null);
+  // The session row is created in the background so Start feels instant; later calls wait for it.
+  const sessionRef = useRef<Promise<string | null> | null>(null);
 
-  const step = steps[stepIndex];
-  const isLastStep = stepIndex === steps.length - 1;
+  // Moves keyboard focus into each new screen, but not on first load.
+  const focusPanel = useCallback((node: HTMLDivElement | null) => {
+    if (node && sessionRef.current) node.focus({ preventScroll: true });
+  }, []);
 
-  async function handleStart() {
-    const id = await startFocusSessionAction(task.id, plannedMinutes);
-    setSessionId(id);
-    setElapsedSeconds(0);
-    setMode("focus");
+  if (arrivedAs !== "pending") {
+    return <FocusUnavailable title={task.title} reason={arrivedAs === "completed" ? "completed" : "removed"} />;
   }
 
-  async function completeCurrentStep() {
-    if (step.id) {
-      await completeSubtaskStepAction(step.id);
-    }
-    if (isLastStep) {
-      const taskReward = await completeTaskStepAction(task.id);
-      const focusReward = sessionId ? await endFocusSessionAction(sessionId, true) : null;
-      if (taskReward && focusReward) {
-        setDoneReward({
-          ...focusReward,
-          xpAwarded: taskReward.xpAwarded + focusReward.xpAwarded,
-          totalXp: focusReward.totalXp,
-          unlockedAchievements: [
-            ...taskReward.unlockedAchievements,
-            ...focusReward.unlockedAchievements,
-          ],
-        });
-      } else {
-        setDoneReward(focusReward ?? taskReward);
+  const plan = planFocus(task.title, subtasks, doneKeys, skipped);
+  const current = pinned ?? plan.queue[0];
+  const isFinal = plan.queue.length <= 1;
+  const canSkip = !pinned && plan.queue.length > 1;
+  const eyebrow = focusEyebrow(plan, current.key);
+
+  function begin(minutes: number | null) {
+    if (sessionRef.current) return; // already started (a double tap, or the start screen fading out)
+    setError(null);
+    sessionRef.current = startFocusSessionAction(task.id, minutes).catch(() => null);
+    setLimitMs(minutes === null ? null : minutes * 60_000);
+    setSegmentStartMs(0);
+    clock.start();
+    setPhase("focus");
+  }
+
+  function skip() {
+    if (!canSkip || busy) return;
+    setSkipped((prev) => [...prev.filter((key) => key !== current.key), current.key]);
+  }
+
+  async function complete() {
+    if (busy) return;
+    const step = current;
+    const last = isFinal;
+    setBusy("completing");
+    setError(null);
+    setPinned(step);
+    try {
+      if (step.id) await completeSubtaskStepAction(step.id);
+      if (!last) {
+        setDoneKeys((prev) => new Set(prev).add(step.key));
+        setSkipped((prev) => prev.filter((key) => key !== step.key));
+        return;
       }
-      setMode("done");
-      return;
+      const taskOutcome = await completeTaskStepAction(task.id);
+      const sessionId = await sessionRef.current;
+      const focusOutcome = sessionId ? await endFocusSessionAction(sessionId, true) : null;
+      const merged = mergeOutcomes(taskOutcome, focusOutcome);
+      celebrate(merged);
+      setOutcome(merged);
+      clock.pause();
+      setPhase("done");
+    } catch {
+      setError("That didn't save. Give it another try.");
+    } finally {
+      setPinned(null);
+      setBusy(null);
     }
-    setStepIndex((i) => i + 1);
   }
 
-  function skipStep() {
-    if (isLastStep) {
-      router.push("/today");
-      return;
+  async function exit() {
+    if (busy) return;
+    setBusy("leaving");
+    try {
+      const sessionId = await sessionRef.current;
+      if (sessionId) await endFocusSessionAction(sessionId, false);
+    } catch {
+      // Leaving matters more than closing out the session record.
     }
-    setStepIndex((i) => i + 1);
-  }
-
-  async function exitFocus() {
-    if (sessionId) await endFocusSessionAction(sessionId, false);
     router.push("/today");
   }
 
-  if (mode === "done") {
-    return (
-      <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-24 text-center">
-        <p className="text-2xl font-semibold">Nice work.</p>
-        <p className="text-muted-foreground">{task.title} is complete.</p>
-        <RewardFeedback reward={doneReward} />
-        <Button onClick={() => router.push("/today")}>Back to Today</Button>
-      </div>
-    );
+  function extend() {
+    setSegmentStartMs(clock.elapsedMs);
+    setLimitMs(clock.elapsedMs + EXTEND_MINUTES * 60_000);
   }
-
-  if (mode === "start") {
-    return (
-      <div className="mx-auto flex max-w-md flex-col gap-6 py-16 text-center">
-        <p className="text-muted-foreground text-sm tracking-wide uppercase">{task.title}</p>
-        <p className="text-lg">
-          Step {stepIndex + 1} of {steps.length}
-        </p>
-        <p className="text-2xl font-medium">{step.title}</p>
-
-        {steps.length === 1 && !step.id && (
-          <form
-            className="flex gap-2"
-            action={() => {
-              if (!newStepTitle.trim()) return;
-              addSubtaskAction(task.id, newStepTitle, 0);
-              setNewStepTitle("");
-            }}
-          >
-            <Input
-              value={newStepTitle}
-              onChange={(e) => setNewStepTitle(e.target.value)}
-              placeholder="Optional: break this into a first step"
-            />
-            <Button type="submit" variant="outline">
-              Add
-            </Button>
-          </form>
-        )}
-
-        {task.estimatedMinutes && (
-          <p className="text-muted-foreground text-sm">~{task.estimatedMinutes} min</p>
-        )}
-
-        <div className="flex flex-wrap justify-center gap-2">
-          {TIMER_OPTIONS.map((opt) => (
-            <Button
-              key={opt.label}
-              variant={plannedMinutes === opt.minutes ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPlannedMinutes(opt.minutes)}
-            >
-              {opt.label}
-            </Button>
-          ))}
-        </div>
-
-        <div className="flex justify-center gap-3">
-          <Button variant="ghost" onClick={() => router.push("/today")}>
-            Exit
-          </Button>
-          <Button variant="outline" onClick={skipStep}>
-            Skip
-          </Button>
-          <Button onClick={handleStart}>Start</Button>
-        </div>
-      </div>
-    );
-  }
-
-  const remaining = plannedMinutes ? plannedMinutes * 60 - elapsedSeconds : null;
-  const progressPct = plannedMinutes
-    ? Math.min(100, (elapsedSeconds / (plannedMinutes * 60)) * 100)
-    : Math.min(100, ((stepIndex + 1) / steps.length) * 100);
 
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-6 py-16 text-center">
-      <p className="text-muted-foreground text-sm tracking-wide uppercase">{task.title}</p>
-      <p className="text-2xl font-medium">{step.title}</p>
-
-      <p className="font-mono text-5xl tabular-nums">
-        {remaining !== null ? formatSeconds(remaining) : formatSeconds(elapsedSeconds)}
+    <FocusStage header={<FocusHeader title={task.title} onExit={phase === "done" ? undefined : exit} busy={busy !== null} />}>
+      <p role="status" className="sr-only">
+        {phase === "done" ? "Task complete. Nice work." : ""}
       </p>
-
-      <div className="w-full space-y-1">
-        <Progress value={progressPct} />
-        <p className="text-muted-foreground text-xs">
-          Step {stepIndex + 1} of {steps.length}
-        </p>
-      </div>
-
-      <div className="flex flex-wrap justify-center gap-3">
-        <Button variant="ghost" onClick={exitFocus}>
-          Exit
-        </Button>
-        <Button variant="outline" onClick={() => setPaused((p) => !p)}>
-          {paused ? "Resume" : "Pause"}
-        </Button>
-        <Button variant="outline" onClick={skipStep}>
-          Skip
-        </Button>
-        <Button onClick={completeCurrentStep}>Complete</Button>
-      </div>
-    </div>
+      <AnimatePresence mode="wait" initial={false}>
+        {phase === "start" && (
+          <m.div key="start" ref={focusPanel} tabIndex={-1} className="outline-none" {...phaseMotion}>
+            <FocusStart
+              task={task}
+              stepTitle={current.title}
+              eyebrow={eyebrow}
+              stepCount={subtasks.length}
+              canSkip={canSkip}
+              onStart={begin}
+              onSkip={skip}
+            />
+          </m.div>
+        )}
+        {phase === "focus" && (
+          <m.div key="focus" ref={focusPanel} tabIndex={-1} className="outline-none" {...phaseMotion}>
+            <FocusSession
+              step={current}
+              steps={plan.steps}
+              eyebrow={eyebrow}
+              elapsedMs={clock.elapsedMs}
+              limitMs={limitMs}
+              segmentStartMs={segmentStartMs}
+              running={clock.running}
+              busy={busy !== null}
+              error={error}
+              canSkip={canSkip}
+              onTogglePause={clock.running ? clock.pause : clock.resume}
+              onSkip={skip}
+              onComplete={complete}
+              onExtend={extend}
+              onExit={exit}
+            />
+          </m.div>
+        )}
+        {phase === "done" && (
+          <m.div key="done" ref={focusPanel} tabIndex={-1} className="outline-none" {...phaseMotion}>
+            <FocusDone taskTitle={task.title} outcome={outcome} />
+          </m.div>
+        )}
+      </AnimatePresence>
+    </FocusStage>
   );
 }

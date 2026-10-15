@@ -1,3 +1,4 @@
+import { DEFAULT_TIMEZONE, zonedDateString } from "@/lib/dates/tz";
 import type { TaskStatus } from "@/types/task";
 
 export function isOverdue(
@@ -9,12 +10,12 @@ export function isOverdue(
   return new Date(dueAt).getTime() < now.getTime();
 }
 
-export function isDueToday(dueAt: string | null, now: Date = new Date()): boolean {
+/** Is `dueAt` on the same calendar day as `now`, as seen in `timezone`? */
+export function isDueToday(
+  dueAt: string | null,
+  now: Date = new Date(),
+  timezone: string = DEFAULT_TIMEZONE,
+): boolean {
   if (!dueAt) return false;
-  const due = new Date(dueAt);
-  return (
-    due.getFullYear() === now.getFullYear() &&
-    due.getMonth() === now.getMonth() &&
-    due.getDate() === now.getDate()
-  );
+  return zonedDateString(new Date(dueAt), timezone) === zonedDateString(now, timezone);
 }

@@ -1,79 +1,94 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { ArrowRight } from "lucide-react";
+import { Reveal } from "@/components/motion/primitives";
+import { MoveRestPanel } from "@/components/rescue/move-rest-panel";
+import { RecoveryCard } from "@/components/rescue/recovery-card";
+import { RescueClear } from "@/components/rescue/rescue-clear";
+import { RescueOpenedTracker } from "@/components/rescue/rescue-opened-tracker";
+import { buttonVariants } from "@/components/ui/button";
+import { requireSession } from "@/lib/auth/session";
 import * as taskRepo from "@/repositories/task-repository";
 import { needsRescue, restOfBacklog, selectRecoverySet } from "@/services/rescue-service";
-import { buttonVariants } from "@/components/ui/button";
-import { MoveRestButton } from "@/components/rescue/move-rest-button";
+
+export const metadata: Metadata = { title: "Getting back on track" };
+
+const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+const asWord = (n: number) => NUMBER_WORDS[n] ?? String(n);
+
+function headline(pendingCount: number, focusCount: number): React.ReactNode {
+  if (focusCount >= pendingCount) {
+    return pendingCount === 1 ? (
+      <>One task has been waiting. Let&apos;s start there.</>
+    ) : (
+      <>
+        You have {pendingCount} unfinished tasks. Let&apos;s take them <span className="italic">one at a time</span>.
+      </>
+    );
+  }
+  return (
+    <>
+      You have {pendingCount} unfinished tasks. Let&apos;s focus on <span className="italic">{asWord(focusCount)}</span>.
+    </>
+  );
+}
 
 export default async function RescuePage() {
-  const supabase = await createClient();
-  if (!supabase) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Rescue</h1>
-        <p className="text-muted-foreground">Connect Supabase to use Rescue Mode here.</p>
-      </div>
-    );
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
+  const { supabase, userId, timezone, profile } = await requireSession();
   const now = new Date();
-  const tasks = await taskRepo.listTasks(supabase, user.id);
-  const pending = tasks.filter((t) => t.status === "pending");
+  const tasks = await taskRepo.listTasks(supabase, userId);
 
   if (!needsRescue(tasks, now)) {
-    return (
-      <div className="mx-auto max-w-md space-y-2 py-16 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Rescue</h1>
-        <p className="text-muted-foreground">No rescue needed.</p>
-        <Link href="/today" className="text-sm underline">
-          Back to Today
-        </Link>
-      </div>
-    );
+    return <RescueClear showCompanion={profile.gamificationMode !== "off"} />;
   }
 
+  const pendingCount = tasks.filter((t) => t.status === "pending").length;
   const recoverySet = selectRecoverySet(tasks, now);
   const rest = restOfBacklog(tasks, recoverySet);
   const first = recoverySet[0];
 
   return (
-    <div className="mx-auto max-w-lg space-y-6 py-8">
-      <div className="space-y-1 text-center">
-        <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-          Getting back on track
-        </p>
-        <h1 className="text-xl">
-          You have {pending.length} unfinished task{pending.length === 1 ? "" : "s"}. Let&apos;s
-          focus on {recoverySet.length}:
-        </h1>
-      </div>
+    <div className="mx-auto w-full max-w-3xl space-y-10">
+      <RescueOpenedTracker />
 
-      <ol className="space-y-2">
-        {recoverySet.map((task, i) => (
-          <li key={task.id} className="flex items-center gap-3 rounded-lg border p-3">
-            <span className="text-muted-foreground">{i + 1}.</span>
-            <span className="flex-1">{task.title}</span>
-            {task.estimatedMinutes && (
-              <span className="text-muted-foreground text-sm">{task.estimatedMinutes} min</span>
-            )}
+      <Reveal>
+        <header className="space-y-3">
+          <p className="text-eyebrow">Getting back on track</p>
+          <h1 className="font-display text-4xl leading-tight sm:text-5xl">{headline(pendingCount, recoverySet.length)}</h1>
+          <p className="text-muted-foreground">Start with these. Everything else can wait.</p>
+        </header>
+      </Reveal>
+
+      <ol className="space-y-3 sm:space-y-4">
+        {recoverySet.map((task, index) => (
+          <li key={task.id}>
+            <Reveal delay={0.1 + index * 0.08}>
+              <RecoveryCard task={task} index={index} now={now} timezone={timezone} />
+            </Reveal>
           </li>
         ))}
       </ol>
 
-      <div className="flex flex-col items-center gap-3">
-        {first && (
-          <Link href={`/focus/${first.id}`} className={buttonVariants({ size: "lg" })}>
-            Start first
-          </Link>
-        )}
-        <MoveRestButton taskIds={rest.map((t) => t.id)} />
-        <p className="text-muted-foreground text-xs">You&apos;re back. One thing at a time.</p>
-      </div>
+      <Reveal delay={0.4}>
+        <div className="space-y-4">
+          {first && (
+            <Link
+              href={`/focus/${first.id}`}
+              className={buttonVariants({ variant: "brand", size: "xl", className: "w-full" })}
+            >
+              Start first
+              <ArrowRight aria-hidden />
+            </Link>
+          )}
+          <p className="text-center text-muted-foreground">You&apos;re back. One thing at a time.</p>
+        </div>
+      </Reveal>
+
+      {rest.length > 0 && (
+        <Reveal delay={0.5}>
+          <MoveRestPanel taskIds={rest.map((t) => t.id)} />
+        </Reveal>
+      )}
     </div>
   );
 }

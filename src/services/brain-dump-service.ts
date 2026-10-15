@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { combineDateAndTime } from "@/lib/dates/combine";
+import { zonedTimeToUtc } from "@/lib/dates/tz";
 import * as taskRepo from "@/repositories/task-repository";
 import type { ParsedTaskItem } from "@/types/brain-dump";
 
@@ -19,19 +19,22 @@ export async function recordBrainDump(
   if (error) throw error;
 }
 
+/** Dates and times in the preview are wall-clock values in the user's timezone. */
 export async function createTasksFromItems(
   supabase: SupabaseClient,
   userId: string,
   items: ParsedTaskItem[],
   source: "brain_dump" | "voice",
-): Promise<void> {
+  timezone: string,
+): Promise<number> {
   for (const item of items) {
     await taskRepo.createTask(supabase, userId, {
       title: item.title,
       priority: item.priority ?? "medium",
-      dueAt: item.dueDate ? combineDateAndTime(item.dueDate, item.dueTime) : null,
+      dueAt: item.dueDate ? zonedTimeToUtc(item.dueDate, item.dueTime, timezone).toISOString() : null,
       estimatedMinutes: item.estimatedMinutes ?? null,
       source,
     });
   }
+  return items.length;
 }

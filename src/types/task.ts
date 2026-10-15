@@ -22,6 +22,7 @@ export interface Task {
   recurrenceRule: RecurrenceRule | null;
   startedAt: string | null;
   postponedCount: number;
+  isBoss: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,4 +49,7 @@ export interface TaskInput {
   dueAt?: string | null;
   scheduledAt?: string | null;
   recurrenceRule?: RecurrenceRule | null;
+  isBoss?: boolean;
+  /** For a recurring series: the occurrence this one was generated from. */
+  parentTaskId?: string | null;
 }

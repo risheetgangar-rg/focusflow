@@ -1,7 +1,11 @@
+/**
+ * Two columns from `lg` up: the form on one side, a decorative panel on the other
+ * (each page supplies both through <AuthShell>). Below `lg` it's just the form.
+ */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-sm space-y-6">{children}</div>
-    </div>
+    <main id="main" className="grid min-h-dvh bg-background lg:grid-cols-2">
+      {children}
+    </main>
   );
 }

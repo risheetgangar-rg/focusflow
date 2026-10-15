@@ -7,8 +7,10 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
  * this from anything reachable by a request tied to a single user's session.
  */
 export function createAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // The Vercel Supabase integration injects these under a "default_" prefix.
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_default_SUPABASE_URL;
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.default_SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceRoleKey) return null;
 
   return createSupabaseClient(url, serviceRoleKey, {

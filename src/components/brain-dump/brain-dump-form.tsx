@@ -1,145 +1,240 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
+import { AnimatePresence, m } from "motion/react";
+import { ArrowRight, Check, Mic, Sparkles } from "lucide-react";
 import {
   confirmBrainDumpAction,
   parseBrainDumpAction,
   type BrainDumpParseState,
   type ConfirmState,
 } from "@/app/(dashboard)/brain-dump/actions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  EXAMPLES,
+  MAX_CHARS,
+  hasBlankTitle,
+  taskCountLabel,
+  toEditable,
+  toPayload,
+  wordCount,
+  type EditableItem,
+} from "@/components/brain-dump/brain-dump-items";
+import { ReviewCard } from "@/components/brain-dump/review-card";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import type { ParsedTaskItem } from "@/types/brain-dump";
 
 const parseInitial: BrainDumpParseState = {};
 const confirmInitial: ConfirmState = {};
+const EASE = [0.22, 1, 0.36, 1] as const;
 
+/**
+ * Write it all down, see it split into tasks, fix anything, then save.
+ * Nothing is stored as a task until the very last button.
+ */
 export function BrainDumpForm({
   source = "text",
-  defaultText,
+  defaultText = "",
 }: {
   source?: "text" | "voice";
   defaultText?: string;
 }) {
   const [parseState, parseAction, parsing] = useActionState(parseBrainDumpAction, parseInitial);
-  const [confirmState, confirmAction, confirming] = useActionState(
-    confirmBrainDumpAction,
-    confirmInitial,
-  );
-  const [items, setItems] = useState<ParsedTaskItem[] | null>(null);
+  const [confirmState, confirmAction, confirming] = useActionState(confirmBrainDumpAction, confirmInitial);
 
-  // Adjust state during render (React's recommended pattern) instead of an
-  // effect, so a fresh parse/confirm result is reflected in the same commit.
+  const [text, setText] = useState(defaultText);
+  const [items, setItems] = useState<EditableItem[] | null>(null);
+  const [batch, setBatch] = useState(0);
+  const [saved, setSaved] = useState<string[] | null>(null);
+
+  // React to a fresh server result in the same render (no effect needed).
   const [seenParse, setSeenParse] = useState(parseState);
   if (parseState !== seenParse) {
     setSeenParse(parseState);
-    if (parseState.items) setItems(parseState.items);
+    if (parseState.items) {
+      setItems(toEditable(parseState.items, batch + 1));
+      setBatch(batch + 1);
+    }
   }
   const [seenConfirm, setSeenConfirm] = useState(confirmState);
   if (confirmState !== seenConfirm) {
     setSeenConfirm(confirmState);
-    if (confirmState.message) setItems(null);
+    if (confirmState.message && items) {
+      setSaved(items.map((item) => item.title.trim()));
+      setItems(null);
+      setText("");
+    }
   }
 
-  function updateItem(index: number, patch: Partial<ParsedTaskItem>) {
-    setItems((prev) => prev?.map((it, i) => (i === index ? { ...it, ...patch } : it)) ?? null);
+  function updateItem(key: string, patch: Partial<ParsedTaskItem>) {
+    setItems((prev) => prev?.map((item) => (item.key === key ? { ...item, ...patch } : item)) ?? null);
   }
 
-  function removeItem(index: number) {
-    setItems((prev) => prev?.filter((_, i) => i !== index) ?? null);
+  function removeItem(key: string) {
+    setItems((prev) => {
+      const next = prev?.filter((item) => item.key !== key) ?? null;
+      return next && next.length > 0 ? next : null;
+    });
   }
 
-  if (!items) {
+  /* ---------- 3. Saved ---------- */
+  if (saved) {
     return (
-      <form action={parseAction} className="space-y-4">
-        {confirmState.message && (
-          <p className="text-sm text-green-700 dark:text-green-500">{confirmState.message}</p>
-        )}
-        <input type="hidden" name="source" value={source} />
-        <Textarea
-          name="text"
-          rows={5}
-          defaultValue={defaultText}
-          placeholder="Tomorrow call Rahul at 6 and finish presentation, and pay electricity bill Friday."
-          required
-        />
-        {parseState.error && <p className="text-destructive text-sm">{parseState.error}</p>}
-        <Button type="submit" disabled={parsing}>
-          Review
-        </Button>
-      </form>
+      <m.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: EASE }}
+        className="rounded-[2rem] bg-tint-mint px-6 py-10 text-center sm:px-10 sm:py-14"
+      >
+        <span className="mx-auto grid size-14 animate-pop place-items-center rounded-full bg-card/80">
+          <Check size={26} />
+        </span>
+        <p className="mt-5 font-display text-5xl sm:text-6xl">{taskCountLabel(saved.length)} added.</p>
+        <ul className="mx-auto mt-5 max-w-md space-y-1 text-foreground/70">
+          {saved.slice(0, 4).map((title, i) => (
+            <li key={`${title}-${i}`} className="truncate">
+              {title}
+            </li>
+          ))}
+          {saved.length > 4 && <li>and {saved.length - 4} more</li>}
+        </ul>
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <Link href="/tasks" className={buttonVariants({ variant: "default", size: "lg" })}>
+            See your tasks <ArrowRight />
+          </Link>
+          <Button variant="outline" size="lg" onClick={() => setSaved(null)}>
+            Dump some more
+          </Button>
+        </div>
+      </m.div>
     );
   }
 
-  return (
-    <div className="space-y-4">
-      <p className="text-muted-foreground text-sm">
-        I found {items.length} task{items.length === 1 ? "" : "s"}. Review before saving.
-      </p>
+  /* ---------- 2. Review ---------- */
+  if (items) {
+    return (
+      <m.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: EASE }}
+        className="space-y-6"
+      >
+        <div>
+          <p className="text-eyebrow">Step 2 of 2</p>
+          <h2 className="mt-1.5 font-display text-4xl sm:text-5xl">
+            I found <em className="text-brand">{taskCountLabel(items.length)}</em>.
+          </h2>
+          <p className="mt-2 text-muted-foreground">Fix anything that looks off. Nothing is saved until you press Save.</p>
+        </div>
 
-      <div className="space-y-3">
-        {items.map((item, i) => (
-          <div key={i} className="grid grid-cols-1 gap-2 rounded-lg border p-3 sm:grid-cols-[1fr_auto_auto_auto_auto]">
-            <Input
-              value={item.title}
-              onChange={(e) => updateItem(i, { title: e.target.value })}
-              aria-label="Title"
-            />
-            <Input
-              type="date"
-              className="sm:w-36"
-              value={item.dueDate ?? ""}
-              onChange={(e) => updateItem(i, { dueDate: e.target.value || undefined })}
-              aria-label="Due date"
-            />
-            <Input
-              type="time"
-              className="sm:w-28"
-              value={item.dueTime ?? ""}
-              onChange={(e) => updateItem(i, { dueTime: e.target.value || undefined })}
-              aria-label="Due time"
-            />
-            <Select
-              value={item.priority ?? "medium"}
-              onValueChange={(v) => updateItem(i, { priority: v as ParsedTaskItem["priority"] })}
-            >
-              <SelectTrigger className="sm:w-28" aria-label="Priority">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(i)}>
-              Remove
-            </Button>
-          </div>
-        ))}
+        <ul className="space-y-3">
+          <AnimatePresence initial={false}>
+            {items.map((item, i) => (
+              <m.div
+                key={item.key}
+                layout="position"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.25, delay: i * 0.04, ease: EASE }}
+              >
+                <ReviewCard
+                  item={item}
+                  index={i}
+                  onChange={(patch) => updateItem(item.key, patch)}
+                  onRemove={() => removeItem(item.key)}
+                />
+              </m.div>
+            ))}
+          </AnimatePresence>
+        </ul>
+
+        {confirmState.error && (
+          <p role="alert" className="text-sm text-destructive">
+            {confirmState.error}
+          </p>
+        )}
+
+        <form action={confirmAction} className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <input type="hidden" name="items" value={JSON.stringify(toPayload(items))} />
+          <input type="hidden" name="source" value={source} />
+          <Button
+            type="submit"
+            variant="brand"
+            size="xl"
+            disabled={confirming || hasBlankTitle(items)}
+            className="sm:min-w-56"
+          >
+            {confirming ? "Saving…" : `Save ${taskCountLabel(items.length)}`}
+          </Button>
+          <Button type="button" variant="ghost" size="lg" onClick={() => setItems(null)} disabled={confirming}>
+            Back to my text
+          </Button>
+        </form>
+        {hasBlankTitle(items) && <p className="text-sm text-muted-foreground">Give each task a name, or remove it.</p>}
+      </m.div>
+    );
+  }
+
+  /* ---------- 1. Write ---------- */
+  const words = wordCount(text);
+  return (
+    <form action={parseAction} className="space-y-5">
+      <input type="hidden" name="source" value={source} />
+
+      <div className="rounded-[2rem] border border-border bg-card p-3 shadow-soft transition-shadow focus-within:shadow-lift sm:p-4">
+        <Textarea
+          name="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          maxLength={MAX_CHARS}
+          rows={7}
+          required
+          autoFocus
+          aria-label="Everything on your mind"
+          placeholder="Everything on your mind, in any order. “Tomorrow call Rahul at 6, finish the presentation, pay the electricity bill Friday…”"
+          className="min-h-52 resize-none border-0 bg-transparent px-3 py-3 text-lg leading-relaxed shadow-none hover:border-0 focus-visible:ring-0 sm:text-xl"
+        />
+        <div className="flex flex-wrap items-center justify-between gap-3 px-3 pt-1 pb-1">
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {words === 0 ? "Messy is fine" : `${words} ${words === 1 ? "word" : "words"}`}
+          </span>
+          <Button type="submit" variant="brand" size="lg" disabled={parsing || words === 0}>
+            <Sparkles /> {parsing ? "Sorting it out…" : "Sort it out"}
+          </Button>
+        </div>
       </div>
 
-      {confirmState.error && <p className="text-destructive text-sm">{confirmState.error}</p>}
+      {parseState.error && (
+        <p role="alert" className="px-1 text-sm text-destructive">
+          {parseState.error}
+        </p>
+      )}
 
-      <form action={confirmAction} className="flex gap-2">
-        <input type="hidden" name="items" value={JSON.stringify(items)} />
-        <input type="hidden" name="source" value={source} />
-        <Button type="submit" disabled={confirming || items.length === 0}>
-          Save {items.length} task{items.length === 1 ? "" : "s"}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => setItems(null)}>
-          Start over
-        </Button>
-      </form>
-    </div>
+      <div className="space-y-3">
+        <p className="text-eyebrow">Not sure where to start? Try one</p>
+        <div className="flex flex-col gap-2">
+          {EXAMPLES.map((example) => (
+            <button
+              key={example}
+              type="button"
+              onClick={() => setText(example)}
+              className="rounded-2xl border border-border bg-card/60 px-4 py-3 text-left text-sm text-muted-foreground transition-all hover:-translate-y-px hover:border-foreground/25 hover:bg-card hover:text-foreground hover:shadow-soft"
+            >
+              {example}
+            </button>
+          ))}
+        </div>
+        {source === "text" && (
+          <p className="pt-1 text-sm text-muted-foreground">
+            Easier to say it out loud?{" "}
+            <Link href="/voice" className="inline-flex items-center gap-1 font-medium text-foreground underline underline-offset-4 hover:text-brand">
+              <Mic size={14} /> Use your voice
+            </Link>
+          </p>
+        )}
+      </div>
+    </form>
   );
 }

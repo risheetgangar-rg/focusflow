@@ -30,6 +30,12 @@ export async function getPreferences(
   };
 }
 
+export async function getTimezone(supabase: SupabaseClient, userId: string): Promise<string> {
+  const { data, error } = await supabase.from("profiles").select("timezone").eq("id", userId).single();
+  if (error) throw error;
+  return data.timezone ?? "UTC";
+}
+
 export async function updatePreferences(
   supabase: SupabaseClient,
   userId: string,

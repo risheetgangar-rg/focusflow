@@ -1,15 +1,13 @@
 import PatternWaves from "@/components/effects/PatternWaves";
 import { HeroActions } from "./hero-actions";
-import { Orbit } from "./orbit";
 import { Rise } from "./rise";
 
 /**
- * Bold, monochrome editorial hero: heavy type up top, then the orbit of
- * poster cards turning beneath it.
+ * Bold hero on the brand gradient: heavy type over whitish dot waves.
  */
 export function Hero() {
   return (
-    <section className="relative isolate overflow-hidden bg-brand-gradient pt-12 text-white sm:pt-20">
+    <section className="relative isolate overflow-hidden bg-brand-gradient pt-12 pb-24 text-white sm:pt-20 sm:pb-32">
       {/* Whitish dot waves drifting over the blue; moving the cursor ripples them, a click drops a splash. */}
       <PatternWaves
         className="absolute! inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black_60%,transparent_92%)]"
@@ -53,9 +51,6 @@ export function Hero() {
         </Rise>
       </div>
 
-      <Rise delay={0.35} className="mt-14 sm:mt-20">
-        <Orbit />
-      </Rise>
     </section>
   );
 }

@@ -1,7 +1,7 @@
 const QUESTIONS = [
   {
-    q: "How is this different from Google Tasks?",
-    a: "Google Tasks shows you the pile. Unstuck shows you one thing, tells you why it's first, and gives you a tiny first step. When you've been away, it shows one small win instead of everything you didn't get to.",
+    q: "How is this different from a to-do list?",
+    a: "A to-do list shows you the pile. Unstuck shows you one thing, tells you why it's first, and gives you a tiny first step. When you've been away, it shows one small win instead of everything you didn't get to.",
   },
   {
     q: "What if I miss a week?",
@@ -40,7 +40,7 @@ export function PileLine() {
   return (
     <section className="px-5 py-20 text-center sm:py-28">
       <p className="mx-auto max-w-4xl font-display text-4xl leading-tight text-balance sm:text-6xl">
-        Google Tasks shows you the pile. <em className="text-brand">Unstuck shows you one thing.</em>
+        A to-do list shows you the pile. <em className="text-brand">Unstuck shows you one thing.</em>
       </p>
     </section>
   );

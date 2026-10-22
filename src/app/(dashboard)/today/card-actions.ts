@@ -81,6 +81,8 @@ const itemSchema = z.object({
   title: z.string().trim().min(1).max(200),
   kind: z.enum(["task", "reminder"]),
   level: z.enum(["low", "medium", "high", "critical"]),
+  /** Non-negotiables repeat on a rhythm; everything else is a one-off. */
+  repeat: z.enum(["daily", "twice_weekly", "thrice_weekly", "weekly"]).nullable().optional(),
   /** Exact date and time, already turned into an ISO string by the browser. */
   at: z.string().datetime().nullable(),
 });
@@ -108,6 +110,7 @@ export async function addManyAction(input: unknown): Promise<{ ok: true; count: 
       kind: item.kind,
       taskType: guessTaskType(item.title),
       dueAt: item.at,
+      recurrenceRule: item.repeat ?? null,
       ...LEVEL[item.level],
       source: "voice",
     });

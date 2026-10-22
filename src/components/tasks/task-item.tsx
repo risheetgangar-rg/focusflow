@@ -3,7 +3,7 @@
 import { useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { AnimatePresence, m } from "motion/react";
-import { Bell, CalendarClock, ChevronDown, Hourglass, MoreHorizontal, Moon, Star, Target } from "lucide-react";
+import { CalendarClock, ChevronDown, Hourglass, MoreHorizontal, Repeat, Target } from "lucide-react";
 import {
   cancelTaskAction,
 
@@ -26,12 +26,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { describeDue } from "@/lib/dates/format";
 import { cn } from "@/lib/utils";
-import { isWaiting } from "@/services/recommendation-service";
 import { announceTaskDone } from "@/components/today/today-progress";
 import { finishTaskAction } from "@/app/(dashboard)/today/card-actions";
 import { announceWin } from "@/components/rewards/win-layer";
 import { StepsEditor } from "./steps-editor";
-import { URGENCY_STYLE, UrgencyChip, useUrgency } from "./urgency-chip";
+import { REPEAT_LABEL } from "@/lib/dates/recurrence";
+import { TONE_STYLE, toneOf } from "@/lib/tasks/tone";
 import { canWaitFor, useWaitingMode } from "./waiting-mode";
 import type { Subtask, Task } from "@/types/task";
 
@@ -60,11 +60,8 @@ export function TaskItem({
 
   const now = new Date(nowIso);
   const due = task.dueAt ? describeDue(task.dueAt, now, timezone) : null;
-  // Urgency comes from the deadline (and the Must do star), never set by hand.
-  const urgency = useUrgency(task, nowIso);
-  // Snoozed, or planned for later than its due date: say when it's coming back.
-  const plan = task.scheduledAt && task.scheduledAt !== task.dueAt && isWaiting(task, now) ? describeDue(task.scheduledAt, now, timezone) : null;
-  const planLabel = plan ? (plan.tone === "today" ? `Back at ${plan.label.split(" · ")[1] ?? "later"}` : `Planned ${plan.label}`) : null;
+  // One colour instead of labels: parked, right now, soon or whenever.
+  const tone = toneOf(task, now);
   const doneSteps = subtasks.filter((s) => s.completed).length;
 
   function toggleDone(checked: boolean) {
@@ -103,8 +100,8 @@ export function TaskItem({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-l-4 border-border bg-card px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:shadow-soft",
-        !optimisticDone && !isReminder && URGENCY_STYLE[urgency].edge,
+        "group relative overflow-hidden rounded-2xl border border-l-[6px] border-border bg-card px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:shadow-soft",
+        !optimisticDone && [TONE_STYLE[tone].edge, TONE_STYLE[tone].wash],
         optimisticDone && "opacity-60",
       )}
     >
@@ -134,25 +131,12 @@ export function TaskItem({
                 <CalendarClock /> {due.label}
               </Badge>
             )}
-            {/* Kept to the few things that matter at a glance; the rest lives in Edit details. */}
-            {planLabel && (
-              <Badge variant="sky">
-                <Moon /> {planLabel}
-              </Badge>
+            {/* No labels: the row's colour says how pressing it is (see the key above the list). */}
+            {task.recurrenceRule && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                <Repeat size={12} /> {REPEAT_LABEL[task.recurrenceRule]}
+              </span>
             )}
-            {isReminder ? (
-              <Badge variant="sky">
-                <Bell /> Reminder
-              </Badge>
-            ) : (
-              !optimisticDone && <UrgencyChip urgency={urgency} />
-            )}
-            {task.mustDo && (
-              <Badge variant="secondary">
-                <Star /> Must do
-              </Badge>
-            )}
-            {task.description?.startsWith("Sample task") && <Badge variant="outline">Sample</Badge>}
             {subtasks.length > 0 && (
               <button
                 type="button"

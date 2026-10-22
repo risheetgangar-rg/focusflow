@@ -9,7 +9,7 @@ const DAY = 24 * HOUR;
 export const SAMPLE_NOTE = "Sample task — delete it whenever you like.";
 
 /**
- * A guest starts with six sample tasks, as if they'd been away for four days:
+ * A guest starts with a few sample tasks, as if they'd been away for four days:
  * a few things slipped, one appointment has a fixed date, one is starred.
  * That's exactly the moment Unstuck is built for.
  */
@@ -27,9 +27,13 @@ export async function seedGuestDemo(
     { title: "Pay the card bill", taskType: "bills", estimatedMinutes: 2, mustDo: true, dueAt: at(-2 * DAY) },
     { title: "Reply to Priya's email", taskType: "calls", estimatedMinutes: 5, dueAt: at(-3 * DAY) },
     { title: "Call the landlord about the tap", taskType: "calls", estimatedMinutes: 10, dueAt: at(-DAY) },
-    { title: "Finish the presentation slides", taskType: "work", estimatedMinutes: 45, dueAt: at(DAY) },
+    // One of each colour, so the demo shows the whole key.
+    { title: "Finish the presentation slides", taskType: "work", estimatedMinutes: 45, priority: "high", dueAt: at(DAY) },
     { title: "Dentist appointment", taskType: "health", fixedDate: true, dueAt: at(2 * DAY + 5 * HOUR) },
-    { title: "Clean my desk", taskType: "home", estimatedMinutes: 15, dueAt: null },
+    { title: "Clean my desk", taskType: "home", estimatedMinutes: 15, priority: "low", dueAt: null },
+    // A non-negotiable and a reminder, to show the other two sections.
+    { title: "Laundry", taskType: "home", estimatedMinutes: 20, recurrenceRule: "twice_weekly", dueAt: null },
+    { title: "Take my meds", kind: "reminder", dueAt: at(6 * HOUR), recurrenceRule: "daily" },
   ];
   for (const task of tasks) await taskRepo.createTask(supabase, userId, sample(task));
 

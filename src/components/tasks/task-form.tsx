@@ -16,6 +16,13 @@ import { cn } from "@/lib/utils";
 import type { Task, TaskKind } from "@/types/task";
 import { DurationDial } from "./duration-dial";
 
+const RHYTHMS = [
+  { value: "daily", label: "Every day" },
+  { value: "thrice_weekly", label: "3× a week" },
+  { value: "twice_weekly", label: "2× a week" },
+  { value: "weekly", label: "Every week" },
+];
+
 export const PRIORITIES = [
   { value: "low", label: "Low" },
   { value: "medium", label: "Medium" },
@@ -45,7 +52,9 @@ export function TaskForm({
   const dueTime = due ? zonedTimeString(due, timezone) : "";
   const [kind, setKind] = useState<TaskKind>(task?.kind ?? "task");
   const [minutes, setMinutes] = useState<number | null>(task?.estimatedMinutes ?? null);
-  const [showMore, setShowMore] = useState(Boolean(task?.description || task?.recurrenceRule));
+  const [showMore, setShowMore] = useState(Boolean(task?.description || (task?.kind === "reminder" && task.recurrenceRule)));
+  const [routine, setRoutine] = useState(Boolean(task?.recurrenceRule && task.kind !== "reminder"));
+  const [rhythm, setRhythm] = useState<string>(task?.recurrenceRule && task.recurrenceRule !== "monthly" ? task.recurrenceRule : "daily");
   const isReminder = kind === "reminder";
   const typeLabel = task && task.taskType !== "other" ? TASK_TYPES.find((t) => t.value === task.taskType)?.label : "";
 
@@ -100,22 +109,47 @@ export function TaskForm({
         ))}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* A task is either a non-negotiable (on a rhythm) or new stuff (a one-off). */}
+      {!isReminder && (
+        <PillGroup
+          name="lane"
+          ariaLabel="What kind of task"
+          value={routine ? "routine" : "fresh"}
+          onValueChange={(v) => setRoutine(v === "routine")}
+          options={[
+            { value: "routine", label: "Non-negotiable" },
+            { value: "fresh", label: "New stuff" },
+          ]}
+        />
+      )}
+
+      {routine && !isReminder ? (
         <div className="space-y-2">
-          <Label htmlFor="dueDate">{isReminder ? "Remind me on" : "Do it by (optional)"}</Label>
-          <Input
-            id="dueDate"
-            name="dueDate"
-            type="date"
-            required={isReminder}
-            defaultValue={due ? zonedDateString(due, timezone) : (defaultDueDate ?? "")}
-          />
+          <Label>How often?</Label>
+          <PillGroup name="recurrenceRule" ariaLabel="How often" value={rhythm} onValueChange={setRhythm} options={RHYTHMS} />
+          {/* Keep the date of the current round when only the rhythm is edited. */}
+          <input type="hidden" name="dueDate" value={due ? zonedDateString(due, timezone) : ""} />
+          <input type="hidden" name="dueTime" value={dueTime} />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="dueTime">{isReminder ? "At" : "At (optional)"}</Label>
-          <Input id="dueTime" name="dueTime" type="time" required={isReminder} defaultValue={dueTime && dueTime !== "00:00" ? dueTime : ""} />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="dueDate">{isReminder ? "Remind me on" : "Do it by (optional)"}</Label>
+            <Input
+              id="dueDate"
+              name="dueDate"
+              type="date"
+              required={isReminder}
+              defaultValue={due ? zonedDateString(due, timezone) : (defaultDueDate ?? "")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="dueTime">{isReminder ? "At" : "At (optional)"}</Label>
+            <Input id="dueTime" name="dueTime" type="time" required={isReminder} defaultValue={dueTime && dueTime !== "00:00" ? dueTime : ""} />
+          </div>
+          {!isReminder && <input type="hidden" name="recurrenceRule" value="none" />}
         </div>
-      </div>
+      )}
 
       {!isReminder && (
         <div className="space-y-2">
@@ -151,20 +185,22 @@ export function TaskForm({
           <Label htmlFor="description">Notes (optional)</Label>
           <Textarea id="description" name="description" defaultValue={task?.description ?? ""} placeholder="Anything that will help future you" />
         </div>
-        <div className="space-y-2">
-          <Label>Repeat</Label>
-          <PillGroup
-            name="recurrenceRule"
-            ariaLabel="Repeat"
-            defaultValue={task?.recurrenceRule ?? "none"}
-            options={[
-              { value: "none", label: "Never" },
-              { value: "daily", label: "Daily" },
-              { value: "weekly", label: "Weekly" },
-              { value: "monthly", label: "Monthly" },
-            ]}
-          />
-        </div>
+        {isReminder && (
+          <div className="space-y-2">
+            <Label>Repeat</Label>
+            <PillGroup
+              name="recurrenceRule"
+              ariaLabel="Repeat"
+              defaultValue={task?.recurrenceRule ?? "none"}
+              options={[
+                { value: "none", label: "Never" },
+                { value: "daily", label: "Daily" },
+                { value: "weekly", label: "Weekly" },
+                { value: "monthly", label: "Monthly" },
+              ]}
+            />
+          </div>
+        )}
       </div>
 
       {state.error && (

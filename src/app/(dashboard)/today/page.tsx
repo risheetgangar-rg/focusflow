@@ -117,7 +117,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         </h1>
       </header>
 
-      <TodayCard key={focused?.id ?? "today"} items={items} nowIso={now.toISOString()} autoStartId={focused?.id} />
+      <TodayCard key="today" items={items} nowIso={now.toISOString()} autoStartId={focused?.id} />
 
       {ordered.length > TODAY_LIMIT && (
         <Link href="/tasks" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">

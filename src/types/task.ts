@@ -1,7 +1,7 @@
 export type TaskStatus = "pending" | "completed" | "cancelled";
 export type TaskPriority = "low" | "medium" | "high" | "critical";
 export type TaskSource = "manual" | "brain_dump" | "voice" | "recurring";
-export type RecurrenceRule = "daily" | "weekly" | "monthly";
+export type RecurrenceRule = "daily" | "twice_weekly" | "thrice_weekly" | "weekly" | "monthly";
 export type TaskType = "bills" | "work" | "calls" | "home" | "health" | "other";
 /** Dread meter: how it felt compared with how heavy it seemed. */
 export type Felt = "easier" | "same" | "harder";

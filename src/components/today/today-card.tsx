@@ -3,15 +3,14 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, m } from "motion/react";
-import { Check, Star, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { finishTaskAction, notNowAction, rateFeltAction } from "@/app/(dashboard)/today/card-actions";
 import { endFocusSessionAction, startFocusSessionAction } from "@/app/focus/actions";
 import { announceWin } from "@/components/rewards/win-layer";
 import { clearTimer, showTimer } from "@/lib/notifications/local";
 import { formatClock } from "@/components/focus/focus-logic";
 import { useFocusClock } from "@/components/focus/use-focus-clock";
-import { URGENCY_STYLE, UrgencyChip, useUrgency } from "@/components/tasks/urgency-chip";
-import { Badge } from "@/components/ui/badge";
+import { TONE_LABEL, TONE_STYLE, toneOf } from "@/lib/tasks/tone";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Felt, Task } from "@/types/task";
@@ -37,10 +36,6 @@ function readNotNow(): number {
   } catch {
     return 0;
   }
-}
-
-function isSample(task: Task) {
-  return task.description?.startsWith("Sample task") ?? false;
 }
 
 /**
@@ -231,23 +226,27 @@ export function TodayCard({
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [hidden, setHidden] = useState<string[]>([]);
-  const [phase, setPhase] = useState<"card" | "focus" | "enough">(() =>
-    autoStartId && items[0]?.task.id === autoStartId ? "focus" : "card",
+  // The task being worked on is held here, so a refresh that reorders the list
+  // (or drops the ?focus= address) can never swap or stop the running timer.
+  const [focusItem, setFocusItem] = useState<CardTask | null>(() =>
+    autoStartId && items[0]?.task.id === autoStartId ? items[0] : null,
   );
+  const [phase, setPhase] = useState<"card" | "focus" | "enough">(() => (focusItem ? "focus" : "card"));
   const [timerMinutes, setTimerMinutes] = useState<number | null>(10);
   const [finished, setFinished] = useState<{ id: string; title: string } | null>(null);
 
-  // "Focus on this" arrives as ?focus=…; tidy the address so a refresh doesn't restart the timer.
-  useEffect(() => {
-    if (!autoStartId) return;
+  // "Focus on this" arrives as ?focus=…. It stays in the address while the timer
+  // runs (so any refresh keeps showing this task) and is tidied away when it ends.
+  function leaveFocusAddress() {
     const url = new URL(window.location.href);
+    if (!url.searchParams.has("focus")) return;
     url.searchParams.delete("focus");
     window.history.replaceState(null, "", url.pathname + url.search);
-  }, [autoStartId]);
+  }
 
   const visible = items.filter((i) => !hidden.includes(i.task.id));
   const item = visible[0] ?? null;
-  const urgency = useUrgency(item?.task ?? { dueAt: null, mustDo: false }, nowIso);
+  const tone = item ? toneOf(item.task, new Date(nowIso)) : "later";
 
   function notNow() {
     if (!item) return;
@@ -267,9 +266,12 @@ export function TodayCard({
   }
 
   function finish(sessionId: Promise<string | null>) {
-    if (!item) return;
-    const id = item.task.id;
-    setFinished({ id, title: item.task.title });
+    const target = focusItem ?? item;
+    if (!target) return;
+    const id = target.task.id;
+    setFocusItem(null);
+    leaveFocusAddress();
+    setFinished({ id, title: target.task.title });
     setHidden((h) => [...h, id]);
     // Straight on to the next task; the win shows as a small card on top.
     setPhase("card");
@@ -284,8 +286,11 @@ export function TodayCard({
   }
 
   function park(sessionId: Promise<string | null>) {
-    if (!item) return;
-    const id = item.task.id;
+    const target = focusItem ?? item;
+    if (!target) return;
+    const id = target.task.id;
+    setFocusItem(null);
+    leaveFocusAddress();
     setHidden((h) => [...h, id]);
     setPhase("card");
     startTransition(async () => {
@@ -327,15 +332,15 @@ export function TodayCard({
             <p className="font-display text-4xl sm:text-5xl">That&apos;s enough for today.</p>
             <p className="mt-3 text-muted-foreground">Your tasks are safe. They&apos;ll be here when you&apos;re ready.</p>
           </m.section>
+        ) : phase === "focus" && focusItem ? (
+          <m.div key={`focus-${focusItem.task.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <FocusTimer item={focusItem} startMinutes={timerMinutes} onDone={finish} onPark={park} />
+          </m.div>
         ) : !item ? (
           <m.section key="clear" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={cn(shell, "text-center")}>
             <p className="font-display text-4xl sm:text-5xl">You&apos;re clear for now.</p>
             <p className="mt-3 text-muted-foreground">Add something below whenever it comes to mind.</p>
           </m.section>
-        ) : phase === "focus" ? (
-          <m.div key={`focus-${item.task.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <FocusTimer item={item} startMinutes={timerMinutes} onDone={finish} onPark={park} />
-          </m.div>
         ) : (
           <m.section
             key={`card-${item.task.id}`}
@@ -343,17 +348,12 @@ export function TodayCard({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: EASE }}
-            className={cn(shell, "border-l-[6px]", URGENCY_STYLE[urgency].edge)}
+            className={cn(shell, "border-l-[8px]", TONE_STYLE[tone].edge)}
           >
             <div className="flex flex-wrap items-center gap-2">
-              <UrgencyChip urgency={urgency} />
-              <span className="text-sm text-muted-foreground">{item.reason}</span>
-              {item.task.mustDo && !item.reason.startsWith("Must do") && (
-                <Badge variant="secondary">
-                  <Star /> Must do
-                </Badge>
-              )}
-              {isSample(item.task) && <Badge variant="outline">Sample</Badge>}
+              {/* The colour says how pressing it is; no labels. */}
+              <span className={cn("size-3 rounded-full", TONE_STYLE[tone].dot)} aria-label={TONE_LABEL[tone]} />
+              <span className="text-sm text-muted-foreground">{item.reason.replace(/^Must do · /, "")}</span>
             </div>
             <h2 className="mt-4 font-display text-4xl leading-[1.05] text-balance sm:text-6xl">{item.task.title}</h2>
             <p className="mt-4 text-foreground/75">
@@ -366,6 +366,7 @@ export function TodayCard({
                 size="xl"
                 onClick={() => {
                   setTimerMinutes(10);
+                  setFocusItem(item);
                   setPhase("focus");
                 }}
               >

@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, useTransition } from "react";
 import { Check, Hourglass } from "lucide-react";
-import { completeTaskAction } from "@/app/(dashboard)/tasks/actions";
+import { finishTaskAction } from "@/app/(dashboard)/today/card-actions";
+import { announceWin } from "@/components/rewards/win-layer";
 import { announceTaskDone } from "@/components/today/today-progress";
 import { Button } from "@/components/ui/button";
 import type { Task } from "@/types/task";
@@ -66,7 +67,7 @@ function WaitingScreen({ target, tasks, onExit }: { target: Task; tasks: Task[];
     setDone((d) => [...d, task.id]);
     announceTaskDone(1);
     startTransition(async () => {
-      await completeTaskAction(task.id);
+      announceWin(await finishTaskAction(task.id));
     });
   }
 

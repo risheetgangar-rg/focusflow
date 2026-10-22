@@ -6,7 +6,7 @@ import { AnimatePresence, m } from "motion/react";
 import { Bell, CalendarClock, ChevronDown, Hourglass, MoreHorizontal, Moon, Star, Target } from "lucide-react";
 import {
   cancelTaskAction,
-  completeTaskAction,
+
   rescheduleTaskAction,
   restoreTaskAction,
   snoozeTaskAction,
@@ -28,6 +28,8 @@ import { describeDue } from "@/lib/dates/format";
 import { cn } from "@/lib/utils";
 import { isWaiting } from "@/services/recommendation-service";
 import { announceTaskDone } from "@/components/today/today-progress";
+import { finishTaskAction } from "@/app/(dashboard)/today/card-actions";
+import { announceWin } from "@/components/rewards/win-layer";
 import { StepsEditor } from "./steps-editor";
 import { URGENCY_STYLE, UrgencyChip, useUrgency } from "./urgency-chip";
 import { canWaitFor, useWaitingMode } from "./waiting-mode";
@@ -49,7 +51,7 @@ export function TaskItem({
   onOpen: (task: Task) => void;
 }) {
   const { timezone } = useApp();
-  const { celebrate, notify } = useCelebration();
+  const { notify } = useCelebration();
   const [, startTransition] = useTransition();
   const [expanded, setExpanded] = useState(false);
   const startWaiting = useWaitingMode();
@@ -74,10 +76,9 @@ export function TaskItem({
         await undoCompleteTaskAction(task.id);
         return;
       }
-      const outcome = await completeTaskAction(task.id);
-      const undo = () => void undoCompleteTaskAction(task.id);
-      if (outcome.reward || outcome.bossDefeated) celebrate(outcome, { undo });
-      else notify({ title: "Marked done", detail: task.title, action: { label: "Undo", onClick: undo } });
+      const win = await finishTaskAction(task.id);
+      announceWin(win);
+      notify({ title: "Marked done", detail: task.title, action: { label: "Undo", onClick: () => void undoCompleteTaskAction(task.id) } });
     });
   }
 

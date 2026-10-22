@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { WrappedStory } from "@/components/wrapped/wrapped-story";
+import { MedalCase } from "@/components/rewards/medal-case";
+import { progressFor } from "@/lib/rewards/medals";
+import { loadHistory } from "@/services/progress-service";
 import { requireSession } from "@/lib/auth/session";
 import { computeWrapped } from "@/lib/wrapped/wrapped";
 import * as taskRepo from "@/repositories/task-repository";
@@ -14,7 +17,7 @@ export default async function WrappedPage() {
   const now = new Date();
   const since = new Date(now.getTime() - 7 * DAY);
 
-  const [tasks, focus, shifts] = await Promise.all([
+  const [tasks, focus, shifts, history] = await Promise.all([
     taskRepo.listVisibleTasks(supabase, userId, since),
     supabase
       .from("focus_sessions")
@@ -27,6 +30,7 @@ export default async function WrappedPage() {
       .eq("user_id", userId)
       .is("undone_at", null)
       .gte("created_at", since.toISOString()),
+    loadHistory(supabase, userId),
   ]);
 
   const completed = tasks.filter((t) => t.status === "completed");
@@ -46,6 +50,9 @@ export default async function WrappedPage() {
         <h1 className="mt-2 font-display text-4xl leading-none sm:text-6xl">Ta-Da List</h1>
       </header>
       <WrappedStory stats={stats} range={range} />
+      <div className="pt-6">
+        <MedalCase progress={progressFor(history, timezone)} />
+      </div>
     </div>
   );
 }

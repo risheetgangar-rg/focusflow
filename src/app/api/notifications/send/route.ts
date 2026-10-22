@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
           title: candidate.title,
           body: candidate.body,
           url: candidate.taskId ? "/tasks" : "/habits",
+          taskId: candidate.taskId ?? undefined,
         });
         if (result.ok) {
           sent++;

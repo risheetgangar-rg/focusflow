@@ -7,6 +7,7 @@ import { addDaysToDateString, zonedDateString, zonedParts, zonedTimeToUtc } from
 import { guessTaskType, isTaskType } from "@/lib/tasks/personal";
 import * as taskRepo from "@/repositories/task-repository";
 import { track } from "@/services/analytics-service";
+import { finishWithWin, type Win } from "@/services/win-service";
 
 function refresh() {
   revalidatePath("/today");
@@ -114,4 +115,14 @@ export async function addManyAction(input: unknown): Promise<{ ok: true; count: 
   await track(session.supabase, session.userId, "task_created", { source: "voice_add", count: parsed.data.length });
   refresh();
   return { ok: true, count: parsed.data.length };
+}
+
+/** Done from Today, Tasks or Lock-in: completes it and returns the XP, any new medals, and what's next. */
+export async function finishTaskAction(taskId: string, focusSessionId?: string | null): Promise<Win | null> {
+  const session = await getSession();
+  if (!session) return null;
+  const win = await finishWithWin(session, taskId, focusSessionId);
+  refresh();
+  revalidatePath("/review");
+  return win;
 }

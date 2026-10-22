@@ -1,4 +1,4 @@
-import { Brain, ListChecks, Settings, Sparkles, Sun, type LucideIcon } from "lucide-react";
+import { Brain, ListChecks, Plug, Settings, Sparkles, Sun, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -34,6 +34,10 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Capture",
     items: [{ href: "/brain-dump", label: "Brain dump", icon: Brain, comingSoon: true }],
+  },
+  {
+    title: "Connect",
+    items: [{ href: "/connections", label: "Workspace connections", icon: Plug, comingSoon: true }],
   },
 ];
 

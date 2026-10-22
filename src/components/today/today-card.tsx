@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, m } from "motion/react";
-import { Star } from "lucide-react";
-import { notNowAction, rateFeltAction } from "@/app/(dashboard)/today/card-actions";
-import { completeTaskAction } from "@/app/(dashboard)/tasks/actions";
+import { Check, Star, X } from "lucide-react";
+import { finishTaskAction, notNowAction, rateFeltAction } from "@/app/(dashboard)/today/card-actions";
 import { endFocusSessionAction, startFocusSessionAction } from "@/app/focus/actions";
+import { announceWin } from "@/components/rewards/win-layer";
+import { clearTimer, showTimer } from "@/lib/notifications/local";
 import { formatClock } from "@/components/focus/focus-logic";
 import { useFocusClock } from "@/components/focus/use-focus-clock";
 import { URGENCY_STYLE, UrgencyChip, useUrgency } from "@/components/tasks/urgency-chip";
@@ -76,6 +77,47 @@ function FocusTimer({
   const seconds = remaining === null ? Math.floor(elapsed / 1000) : Math.ceil(remaining / 1000);
   const fraction = limit === null ? 1 : Math.max(0, Math.min(1, (remaining ?? 0) / limit));
   const sessionId = () => session.current ?? Promise.resolve(null);
+
+  // Mirror the timer in the phone's notification bar, and let its ✓ / Stop buttons work.
+  const live = useRef({ remaining, elapsed, onDone, onPark });
+  useEffect(() => {
+    live.current = { remaining, elapsed, onDone, onPark };
+  });
+  useEffect(() => {
+    const title = item.task.title;
+    const update = () => void showTimer(title, live.current.remaining, live.current.elapsed);
+    update();
+    const id = window.setInterval(update, 30_000);
+    const onMessage = (e: MessageEvent) => {
+      if (e.data?.type !== "unstuck:timer") return;
+      const sid = session.current ?? Promise.resolve(null);
+      if (e.data.action === "timer-done") live.current.onDone(sid);
+      else live.current.onPark(sid);
+    };
+    navigator.serviceWorker?.addEventListener("message", onMessage);
+    return () => {
+      window.clearInterval(id);
+      navigator.serviceWorker?.removeEventListener("message", onMessage);
+      void clearTimer();
+    };
+  }, [item.task.title]);
+  useEffect(() => {
+    if (timesUp) void showTimer(item.task.title, 0, live.current.elapsed, true);
+  }, [timesUp, item.task.title]);
+
+  // Locked in means locked in: Back and closing the tab don't sneak away mid-timer.
+  useEffect(() => {
+    window.history.pushState({ lockedIn: true }, "", window.location.href);
+    const stay = () => window.history.pushState({ lockedIn: true }, "", window.location.href);
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("popstate", stay);
+    window.addEventListener("beforeunload", warn);
+    return () => {
+      window.removeEventListener("popstate", stay);
+      window.removeEventListener("beforeunload", warn);
+    };
+  }, []);
+
   const r = 120;
   const circumference = 2 * Math.PI * r;
 
@@ -135,14 +177,14 @@ function FeltQuestion({ taskId }: { taskId: string }) {
   const [answered, setAnswered] = useState<Felt | null>(null);
   if (answered)
     return (
-      <p className="mt-5 text-sm font-semibold text-brand">
+      <p className="mt-3 text-sm font-semibold text-brand">
         {answered === "easier" ? "Noted. Your brain made it bigger than it was." : "Noted."}
       </p>
     );
   return (
-    <div className="mt-6">
+    <div className="mt-3">
       <p className="text-sm font-semibold">How did it feel?</p>
-      <div className="mt-3 flex flex-wrap justify-center gap-2">
+      <div className="mt-2 flex flex-wrap gap-2">
         {FELT.map((f) => (
           <Button
             key={f.value}
@@ -189,7 +231,7 @@ export function TodayCard({
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [hidden, setHidden] = useState<string[]>([]);
-  const [phase, setPhase] = useState<"card" | "focus" | "done" | "enough">(() =>
+  const [phase, setPhase] = useState<"card" | "focus" | "enough">(() =>
     autoStartId && items[0]?.task.id === autoStartId ? "focus" : "card",
   );
   const [timerMinutes, setTimerMinutes] = useState<number | null>(10);
@@ -229,11 +271,13 @@ export function TodayCard({
     const id = item.task.id;
     setFinished({ id, title: item.task.title });
     setHidden((h) => [...h, id]);
-    setPhase("done");
+    // Straight on to the next task; the win shows as a small card on top.
+    setPhase("card");
     startTransition(async () => {
-      await completeTaskAction(id);
+      // The timer is saved first so its minutes count towards this win.
       const sid = await sessionId;
       if (sid) await endFocusSessionAction(sid, true);
+      announceWin(await finishTaskAction(id, sid));
       onFinished?.();
       router.refresh();
     });
@@ -256,22 +300,32 @@ export function TodayCard({
   return (
     <div className="space-y-5">
       {title}
+      {finished && phase !== "focus" && (
+        <m.div
+          key={`finished-${finished.id}`}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl border-2 border-lime bg-tint-mint px-5 py-4"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <p className="flex items-center gap-2 font-semibold">
+              <Check size={18} className="shrink-0 text-brand" strokeWidth={3} />
+              <span>
+                Done: <span className="line-through decoration-2">{finished.title}</span>
+              </span>
+            </p>
+            <button type="button" onClick={() => setFinished(null)} aria-label="Hide" className="text-muted-foreground hover:text-foreground">
+              <X size={16} />
+            </button>
+          </div>
+          <FeltQuestion key={finished.id} taskId={finished.id} />
+        </m.div>
+      )}
       <AnimatePresence mode="wait" initial={false}>
         {phase === "enough" ? (
           <m.section key="enough" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className={cn(shell, "text-center")}>
             <p className="font-display text-4xl sm:text-5xl">That&apos;s enough for today.</p>
             <p className="mt-3 text-muted-foreground">Your tasks are safe. They&apos;ll be here when you&apos;re ready.</p>
-          </m.section>
-        ) : phase === "done" ? (
-          <m.section key="done" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className={cn(shell, "text-center")}>
-            <p className="font-display text-5xl sm:text-6xl">Let&apos;s go! One off the pile!!</p>
-            <p className="mt-3 text-muted-foreground line-through">{finished?.title}</p>
-            {finished && <FeltQuestion key={finished.id} taskId={finished.id} />}
-            {item && (
-              <Button variant="outline" size="lg" className="mt-6" onClick={() => setPhase("card")}>
-                What&apos;s next
-              </Button>
-            )}
           </m.section>
         ) : !item ? (
           <m.section key="clear" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={cn(shell, "text-center")}>

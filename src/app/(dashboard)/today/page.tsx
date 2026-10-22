@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { AddTaskBox } from "@/components/today/add-task-box";
 import { PretendAwayButton } from "@/components/today/pretend-away-button";
 import { SessionPing } from "@/components/today/session-ping";
 import { TodayCard, type CardTask } from "@/components/today/today-card";
 import { UndoMoveBar, WelcomeBackMode } from "@/components/today/welcome-back-mode";
 import { requireSession } from "@/lib/auth/session";
-import { zonedHour } from "@/lib/dates/tz";
+import { zonedDateString, zonedHour, zonedTimeToUtc } from "@/lib/dates/tz";
 import { groupSubtasks } from "@/lib/tasks/group";
 import { TODAY_LIMIT, billAmount, firstStepFor, rankForToday, reasonFor } from "@/lib/tasks/personal";
 import {
@@ -40,7 +40,10 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const { supabase, userId, profile, timezone } = await requireSession();
   const now = new Date();
 
-  const tasks = await taskRepo.listVisibleTasks(supabase, userId, now);
+  // Open tasks, plus anything finished since midnight for the "Done today" list.
+  const midnight = zonedTimeToUtc(zonedDateString(now, timezone), "00:00", timezone);
+  const tasks = await taskRepo.listVisibleTasks(supabase, userId, midnight);
+  const doneToday = tasks.filter((t) => t.status === "completed");
   const pending = tasks.filter((t) => t.status === "pending");
   const steps = groupSubtasks(
     await taskRepo.listSubtasksForTasks(
@@ -120,6 +123,24 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         <Link href="/tasks" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           Later <ArrowRight size={14} />
         </Link>
+      )}
+
+      {doneToday.length > 0 && (
+        <section aria-labelledby="done-today" className="rounded-3xl border-2 border-border bg-tint-mint/60 px-5 py-4">
+          <h2 id="done-today" className="text-eyebrow text-muted-foreground">
+            Done today
+          </h2>
+          <ul className="mt-2 space-y-1.5">
+            {doneToday.map((t) => (
+              <li key={t.id} className="flex items-center gap-2 text-sm">
+                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-lime text-primary">
+                  <Check size={12} strokeWidth={3.5} />
+                </span>
+                <span className="line-through decoration-foreground/40">{t.title}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <AddTaskBox />

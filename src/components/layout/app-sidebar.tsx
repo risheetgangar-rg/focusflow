@@ -22,7 +22,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       >
         <Icon size={18} />
         {item.label}
-        <span className="ml-auto rounded-full bg-white/15 px-2 py-0.5 text-[0.65rem] font-semibold text-white">Coming soon</span>
+        <span className="ml-auto shrink-0 rounded-full bg-white/15 px-2 py-0.5 text-[0.65rem] font-semibold whitespace-nowrap text-white">Soon</span>
       </span>
     );
   }

@@ -9,7 +9,7 @@ export function AccountSection({ email, isGuest }: { email: string | null; isGue
     return (
       <div className="space-y-6">
         <div className="rounded-3xl bg-tint-butter p-5 sm:p-6">
-          <h3 className="font-display text-2xl">You&apos;re using FocusFlow as a guest</h3>
+          <h3 className="font-display text-2xl">You&apos;re using Unstuck as a guest</h3>
           <p className="mt-2 max-w-xl text-sm text-foreground/80">
             Everything you add is saved to this device&apos;s account only. Add an email and a password to keep it, and
             to pick up where you left off on any device.

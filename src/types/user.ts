@@ -10,6 +10,11 @@ export interface Profile {
   theme: string;
   onboardingCompleted: boolean;
   focusAreas: string[];
+  /** Last time they opened the app. */
+  lastSeenAt: string | null;
+  /** Start of the absence we are welcoming them back from; null when not in welcome-back mode. */
+  awaySince: string | null;
+  welcomeDismissedOn: string | null;
   createdAt: string;
   updatedAt: string;
 }

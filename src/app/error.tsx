@@ -14,7 +14,7 @@ export default function ErrorPage({ retry, reset }: { retry?: () => void; reset:
 
   return (
     <>
-      <title>Something went sideways · FocusFlow</title>
+      <title>Something went sideways · Unstuck</title>
       <CalmScreen
         mood="sleepy"
         tint="peach"

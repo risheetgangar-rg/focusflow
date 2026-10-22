@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { GuestBanner } from "@/components/layout/guest-banner";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { MobileTopBar } from "@/components/layout/mobile-top-bar";
 import { QuickAddProvider } from "@/components/layout/quick-add-provider";
@@ -33,6 +34,7 @@ export default async function AppShellLayout({ children }: { children: React.Rea
         <div className="flex min-h-dvh flex-col lg:pl-[17rem]">
           <MobileTopBar {...identity} />
           <main id="main" className="w-full flex-1 px-5 pt-8 pb-32 sm:px-8 lg:px-12 lg:pt-12 lg:pb-16">
+            {isGuest && <GuestBanner />}
             {children}
           </main>
         </div>

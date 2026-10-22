@@ -83,7 +83,7 @@ describe("recommendNext", () => {
     const trivial = makeTask({ id: "b", urgency: 1, importance: 1 });
     const result = recommendNext([trivial, overdue], { now });
     expect(result?.task.id).toBe("a");
-    expect(result?.reason).toBe("Overdue");
+    expect(result?.reason).toBe("From earlier");
   });
 
   it("prefers a task already in progress over a merely important one, all else equal", () => {

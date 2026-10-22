@@ -55,7 +55,7 @@ export function AppSidebar({
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[17rem] flex-col border-r border-sidebar-border bg-sidebar lg:flex">
       <div className="px-6 pt-7 pb-5">
-        <Link href="/today" aria-label="FocusFlow home">
+        <Link href="/today" aria-label="Unstuck home">
           <Wordmark />
         </Link>
       </div>

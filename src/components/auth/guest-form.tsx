@@ -12,7 +12,14 @@ export function GuestForm({ label = "Continue as guest" }: { label?: string }) {
   const [state, formAction, pending] = useActionState(signInAsGuest, initialState);
 
   return (
-    <form action={formAction} className="space-y-2.5">
+    <form
+      action={(formData: FormData) => {
+        // The browser's timezone, read on submit, so the sample tasks land on the right days.
+        formData.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
+        return formAction(formData);
+      }}
+      className="space-y-2.5"
+    >
       <Button type="submit" variant="outline" size="lg" disabled={pending} className="w-full">
         {pending ? "Setting things up…" : label}
       </Button>

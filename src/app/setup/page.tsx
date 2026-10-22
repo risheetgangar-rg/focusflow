@@ -56,7 +56,7 @@ export default function SetupPage() {
               Let&apos;s connect <em className="text-brand">Supabase.</em>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              This copy of FocusFlow isn&apos;t connected to a database yet, so there&apos;s nowhere to keep your tasks.
+              This copy of Unstuck isn&apos;t connected to a database yet, so there&apos;s nowhere to keep your tasks.
               It takes about five minutes, and you only do it once.
             </p>
           </Rise>

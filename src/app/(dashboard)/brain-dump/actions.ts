@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
 import { getTaskParser } from "@/lib/ai/task-parser";
-import { zonedWallClock } from "@/lib/dates/tz";
+import { needsSupport, parseWithClaude } from "@/lib/ai/claude-parser";
+import { zonedDateString, zonedWallClock } from "@/lib/dates/tz";
+import { createNotes } from "@/repositories/welcome-repository";
 import { brainDumpInputSchema, parsedBrainDumpSchema } from "@/lib/validation/brain-dump";
 import { track } from "@/services/analytics-service";
 import * as brainDumpService from "@/services/brain-dump-service";
@@ -12,6 +14,8 @@ import type { ParsedTaskItem } from "@/types/brain-dump";
 export interface BrainDumpParseState {
   items?: ParsedTaskItem[];
   error?: string;
+  /** Something in the text suggests the person may be struggling; show support instead of a list. */
+  support?: boolean;
 }
 
 export interface ConfirmState {
@@ -35,8 +39,16 @@ export async function parseBrainDumpAction(
   const session = await getSession();
   if (!session) return { error: SIGN_IN_AGAIN };
 
+  // Checked first, by a fixed list, before any AI sees the text.
+  if (needsSupport(parsed.data.text)) return { support: true };
+
   // "tomorrow" and "Friday" must mean the user's tomorrow and Friday, not the server's.
-  const items = getTaskParser().parse(parsed.data.text, zonedWallClock(new Date(), session.timezone));
+  // The AI reader is optional; without a key (or if it fails twice) the built-in reader is used.
+  const now = new Date();
+  const weekday = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: session.timezone }).format(now);
+  const items =
+    (await parseWithClaude(parsed.data.text, zonedDateString(now, session.timezone), weekday)) ??
+    getTaskParser().parse(parsed.data.text, zonedWallClock(now, session.timezone));
   if (items.length === 0) {
     return { error: "I couldn't confidently understand that. Try editing it." };
   }
@@ -71,11 +83,14 @@ export async function confirmBrainDumpAction(
     source,
     session.timezone,
   );
+  const notes = items.filter((item) => item.kind === "note").map((item) => item.title);
+  await createNotes(session.supabase, session.userId, notes);
   await Promise.all(
-    items.map(() => track(session.supabase, session.userId, "task_created", { source })),
+    Array.from({ length: count }, () => track(session.supabase, session.userId, "task_created", { source })),
   );
 
   revalidatePath("/tasks");
   revalidatePath("/today");
+  revalidatePath("/brain-dump");
   return { message: `Added ${count} task${count === 1 ? "" : "s"}.`, count };
 }

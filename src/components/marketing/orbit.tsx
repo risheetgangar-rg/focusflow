@@ -41,7 +41,7 @@ function LogoCard() {
   return (
     <div className="grid h-full place-items-center bg-[#0b0b0c] text-[#f4f4f2]">
       <Rings className="w-[46%]" />
-      <span className="absolute bottom-[8%] text-[calc(var(--card-w)*0.06)] font-semibold tracking-[0.3em]">FOCUSFLOW</span>
+      <span className="absolute bottom-[8%] text-[calc(var(--card-w)*0.06)] font-semibold tracking-[0.3em]">UNSTUCK</span>
     </div>
   );
 }

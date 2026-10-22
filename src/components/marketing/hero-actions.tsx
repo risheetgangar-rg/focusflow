@@ -19,7 +19,14 @@ export function HeroActions() {
           Start free
           <ArrowRight aria-hidden />
         </Link>
-        <form action={guestAction} className="flex">
+        <form
+          action={(formData: FormData) => {
+        // The browser's timezone, read on submit, so the sample tasks land on the right days.
+        formData.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
+        return guestAction(formData);
+      }}
+          className="flex"
+        >
           <Button type="submit" variant="outline" size="xl" disabled={pending} className="w-full flex-1">
             {pending ? "Setting things up…" : "Try it as a guest"}
           </Button>
@@ -33,7 +40,7 @@ export function HeroActions() {
       ) : null}
 
       <p className="text-sm text-muted-foreground">
-        Guest mode needs no email or password.{" "}
+        Guest mode opens a sample list to play with. No email or password.{" "}
         <span className="whitespace-nowrap">
           Already have an account?{" "}
           <Link

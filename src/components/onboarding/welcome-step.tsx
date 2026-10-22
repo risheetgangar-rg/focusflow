@@ -31,7 +31,7 @@ export function WelcomeStep({
         <StepHeading
           title={
             <>
-              Welcome to <em>FocusFlow.</em>
+              Welcome to <em>Unstuck.</em>
             </>
           }
           subtitle="A calm place to get things out of your head and start the next small thing. This takes about a minute, and you can skip anything."

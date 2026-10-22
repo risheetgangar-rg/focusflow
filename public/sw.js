@@ -1,4 +1,4 @@
-// FocusFlow service worker.
+// Unstuck service worker.
 //
 // It does three small things: show reminders (push), open the app when one is
 // tapped, and keep the app from showing a browser error page when offline.
@@ -68,11 +68,11 @@ self.addEventListener("push", (event) => {
   try {
     payload = event.data.json();
   } catch {
-    payload = { title: "FocusFlow", body: event.data.text() };
+    payload = { title: "Unstuck", body: event.data.text() };
   }
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || "FocusFlow", {
+    self.registration.showNotification(payload.title || "Unstuck", {
       body: payload.body || "",
       tag: payload.tag || undefined,
       data: { url: payload.url || "/today" },

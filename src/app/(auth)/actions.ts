@@ -3,6 +3,9 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { isValidTimezone } from "@/lib/dates/tz";
+import { updateProfile } from "@/repositories/profile-repository";
+import { seedGuestDemo } from "@/services/demo-service";
 import {
   forgotPasswordSchema,
   magicLinkSchema,
@@ -16,7 +19,7 @@ export interface AuthFormState {
   message?: string;
 }
 
-const NOT_CONFIGURED = "This copy of FocusFlow isn't connected to a backend yet.";
+const NOT_CONFIGURED = "This copy of Unstuck isn't connected to a backend yet.";
 
 /** Where auth emails should link back to: the configured site URL, else whatever host served this request. */
 async function siteUrl() {
@@ -124,13 +127,24 @@ export async function signInWithMagicLink(
 /** Guest mode: a real (anonymous) account so data is private and saved, with no email or password. */
 export async function signInAsGuest(
   _prevState: AuthFormState,
-  _formData: FormData,
+  formData: FormData,
 ): Promise<AuthFormState> {
   const supabase = await createClient();
   if (!supabase) return { error: NOT_CONFIGURED };
 
-  const { error } = await supabase.auth.signInAnonymously();
+  const { data, error } = await supabase.auth.signInAnonymously();
   if (error) return { error: friendly(error.message) };
+
+  // Guests start with a small sample list, so they can see how everything works right away.
+  if (data.user) {
+    const timezone = String(formData.get("timezone") || "");
+    try {
+      if (isValidTimezone(timezone)) await updateProfile(supabase, data.user.id, { timezone });
+      await seedGuestDemo(supabase, data.user.id, isValidTimezone(timezone) ? timezone : "UTC");
+    } catch (err) {
+      console.warn("guest demo data not created", err);
+    }
+  }
 
   redirect("/today");
 }

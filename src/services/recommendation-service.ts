@@ -74,7 +74,7 @@ export function scoreTask(task: Task, context: RecommendationContext): number {
 function buildReason(task: Task, context: RecommendationContext): string {
   const { now } = context;
 
-  if (isOverdue(task.dueAt, task.status, now)) return "Overdue";
+  if (isOverdue(task.dueAt, task.status, now)) return "From earlier";
   if (task.startedAt) return "Already in progress";
   if (task.scheduledAt) {
     const diffHours = (new Date(task.scheduledAt).getTime() - now.getTime()) / 3_600_000;

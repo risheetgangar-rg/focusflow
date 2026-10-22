@@ -21,7 +21,7 @@ function ReminderPreview() {
         <LogoMark className="size-10" />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-3">
-            <p className="text-sm font-semibold">FocusFlow</p>
+            <p className="text-sm font-semibold">Unstuck</p>
             <p className="text-xs text-muted-foreground">now</p>
           </div>
           <p className="mt-0.5 text-sm leading-snug text-foreground/85">
@@ -85,7 +85,7 @@ export function RemindersStep({ onNext }: { onNext: () => void }) {
 
         {!supported ? (
           <p className="rounded-2xl bg-tint-butter px-4 py-3 text-sm leading-relaxed text-foreground">
-            This browser can&apos;t show reminders, so we&apos;ll skip this one. FocusFlow works fine without them.
+            This browser can&apos;t show reminders, so we&apos;ll skip this one. Unstuck works fine without them.
           </p>
         ) : null}
 

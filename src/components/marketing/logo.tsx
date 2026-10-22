@@ -23,7 +23,7 @@ export function LogoMark({ className }: { className?: string }) {
 export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={cn("font-display text-2xl leading-none tracking-tight text-foreground", className)}>
-      FocusFlow
+      Unstuck
     </span>
   );
 }
@@ -43,7 +43,7 @@ export function LogoLink({ className, href = "/" }: { className?: string; href?:
   return (
     <Link
       href={href}
-      aria-label="FocusFlow home"
+      aria-label="Unstuck home"
       className={cn("group inline-flex items-center gap-2.5 rounded-full outline-offset-4", className)}
     >
       <LogoMark className="transition-transform duration-300 group-hover:rotate-6" />

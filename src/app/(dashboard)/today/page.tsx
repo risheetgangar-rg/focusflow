@@ -3,12 +3,24 @@ import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ArrowRight, LifeBuoy, Plus } from "lucide-react";
 import { QuestCard } from "@/components/gamification/quest-card";
-import { ProgressRing } from "@/components/motion/progress-ring";
 import { TaskList } from "@/components/tasks/task-list";
 import { BossCard } from "@/components/today/boss-card";
 import { SessionPing } from "@/components/today/session-ping";
 import { TodayHabits, type HabitToday } from "@/components/today/today-habits";
 import { WelcomeBack } from "@/components/today/welcome-back";
+import { PretendAwayButton } from "@/components/today/pretend-away-button";
+import { TodayProgress } from "@/components/today/today-progress";
+import { UndoMoveBar, WelcomeBackMode } from "@/components/today/welcome-back-mode";
+import {
+  UNDO_HOURS,
+  calendarDaysBetween,
+  pickOneWin,
+  timeLabel,
+  waitingTasks,
+  welcomeBackStart,
+} from "@/lib/welcome-back/rules";
+import { updateProfile } from "@/repositories/profile-repository";
+import { latestUndoableShift } from "@/repositories/welcome-repository";
 import { WhatsNextHero } from "@/components/today/whats-next-hero";
 import { buttonVariants } from "@/components/ui/button";
 import { requireSession } from "@/lib/auth/session";
@@ -33,13 +45,6 @@ function greeting(hour: number) {
   if (hour < 12) return "Good morning";
   if (hour < 18) return "Good afternoon";
   return "Good evening";
-}
-
-function progressNote(done: number, remaining: number) {
-  if (done === 0) return remaining === 0 ? "A quiet start." : "A fresh start.";
-  if (remaining === 0) return "All clear. Nice work.";
-  if (done < 3) return "Good start.";
-  return "You're rolling.";
 }
 
 export default async function TodayPage() {
@@ -84,16 +89,19 @@ export default async function TodayPage() {
   const buckets = groupTasks(pending, now, timezone);
   const bosses = mode === "full" ? pending.filter((t) => t.isBoss) : [];
   const boss = bosses.filter((t) => t.id !== topPick?.id).sort(byDue)[0] ?? null;
-  const hidden = new Set<string>([topPick?.id, ...bosses.map((b) => b.id)].filter((id): id is string => Boolean(id)));
+  // Bosses have their own card; everything else (including the top pick) is on the plate.
+  const hidden = new Set<string>(bosses.map((b) => b.id));
 
   const important = [...buckets.upcoming, ...buckets.someday].filter((t) => t.importance >= 4).slice(0, 3);
-  const plate = [...buckets.earlier, ...buckets.today, ...important].filter((t) => !hidden.has(t.id));
+  const isUrgent = (t: { priority: string }) => t.priority === "high" || t.priority === "critical";
+  const plateAll = [...buckets.earlier, ...buckets.today, ...important].filter((t) => !hidden.has(t.id));
+  // High priority goes straight to the top, like an emergency; the rest keep their order.
+  const plate = [...plateAll.filter(isUrgent), ...plateAll.filter((t) => !isUrgent(t))];
   const plateIds = new Set(plate.map((t) => t.id));
   const comingUp = [...buckets.upcoming, ...buckets.someday].filter((t) => !hidden.has(t.id) && !plateIds.has(t.id));
 
-  const dueNow = buckets.earlier.length + buckets.today.length;
-  const total = doneToday + dueNow;
-  const fraction = total > 0 ? doneToday / total : 0;
+  // The ring matches what you see on your plate: done today vs. still on the plate.
+  const dueNow = plate.length;
 
   /* Habits */
   const habitItems: HabitToday[] = habits.map((habit) => {
@@ -115,9 +123,61 @@ export default async function TodayPage() {
     timeZone: timezone,
   }).format(now);
 
+  /* Welcome back after a gap: one small win, everything else parked */
+  const late = waitingTasks(pending, now);
+  const awayStart =
+    pending.length > 0
+      ? welcomeBackStart(
+          {
+            lastSeenAt: profile.lastSeenAt,
+            awaySince: profile.awaySince,
+            welcomeDismissedOn: profile.welcomeDismissedOn,
+            waitingCount: late.length,
+          },
+          now,
+          timezone,
+        )
+      : null;
+  const seenRecently = profile.lastSeenAt && now.getTime() - new Date(profile.lastSeenAt).getTime() < 5 * 60_000;
+  if (awayStart !== profile.awaySince || !seenRecently) {
+    await updateProfile(supabase, userId, { lastSeenAt: now.toISOString(), awaySince: awayStart });
+  }
+  const recentMove = await latestUndoableShift(supabase, userId, new Date(now.getTime() - UNDO_HOURS * 3_600_000));
+  const undo = recentMove ? { shiftId: recentMove.id, moved: recentMove.changes.length } : null;
+
+  if (awayStart) {
+    const win = pickOneWin(pending, now);
+    return (
+      <div className="mx-auto w-full max-w-3xl">
+        <SessionPing />
+        <WelcomeBackMode
+          daysAway={calendarDaysBetween(new Date(awayStart), now, timezone)}
+          hasLateTasks={late.length > 0}
+          undo={undo}
+          oneWin={
+            win
+              ? {
+                  id: win.id,
+                  title: win.title,
+                  minutes: win.estimatedMinutes,
+                  label: timeLabel(win, now, timezone),
+                  firstStep: subtasksByTask[win.id]?.find((s) => !s.completed)?.title ?? null,
+                }
+              : null
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl">
       <SessionPing />
+      {undo && (
+        <div className="mb-6">
+          <UndoMoveBar shiftId={undo.shiftId} moved={undo.moved} />
+        </div>
+      )}
 
       <header className="animate-rise mb-8 flex items-end justify-between gap-6 sm:mb-10">
         <div>
@@ -169,21 +229,7 @@ export default async function TodayPage() {
         </div>
 
         <aside className="space-y-5 xl:col-start-2 xl:row-span-3 xl:row-start-1">
-          <section className="flex items-center gap-5 rounded-3xl border border-border bg-card p-5 shadow-soft sm:p-6">
-            <ProgressRing fraction={fraction} size={104} stroke={9}>
-              <div>
-                <p className="font-display text-4xl leading-none tabular-nums">{doneToday}</p>
-                <p className="mt-0.5 text-[0.65rem] tracking-wide text-muted-foreground uppercase">done</p>
-              </div>
-            </ProgressRing>
-            <div className="min-w-0">
-              <p className="text-eyebrow text-muted-foreground">Today</p>
-              <p className="font-display text-2xl leading-tight">{progressNote(doneToday, dueNow)}</p>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                {dueNow === 0 ? "Nothing due right now." : `${dueNow} on your plate.`}
-              </p>
-            </div>
-          </section>
+          <TodayProgress done={doneToday} remaining={dueNow} />
 
           {quests.length > 0 && <QuestCard quests={quests} />}
           {boss && <BossCard task={boss} steps={subtasksByTask[boss.id] ?? []} />}
@@ -237,6 +283,9 @@ export default async function TodayPage() {
             </section>
           )}
         </div>
+      </div>
+      <div className="mt-12 flex justify-center">
+        <PretendAwayButton />
       </div>
     </div>
   );

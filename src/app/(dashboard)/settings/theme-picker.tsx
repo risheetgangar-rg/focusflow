@@ -31,7 +31,7 @@ function ThemePreview({ swatch, locked }: { swatch: ThemeDefinition["swatch"]; l
   );
 }
 
-/** Pick how FocusFlow looks. With the full game layer on, some themes unlock as you level up. */
+/** Pick how Unstuck looks. With the full game layer on, some themes unlock as you level up. */
 export function ThemePicker({
   currentTheme,
   level,

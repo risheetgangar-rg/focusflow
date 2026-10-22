@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 export default function NotFound() {
   return (
     <>
-      <title>Page not found · FocusFlow</title>
+      <title>Page not found · Unstuck</title>
       <CalmScreen
         mood="sleepy"
         tint="lavender"

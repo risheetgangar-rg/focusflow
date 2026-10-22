@@ -27,14 +27,17 @@ export async function createTasksFromItems(
   source: "brain_dump" | "voice",
   timezone: string,
 ): Promise<number> {
-  for (const item of items) {
-    await taskRepo.createTask(supabase, userId, {
+  const tasks = items.filter((item) => item.kind !== "note");
+  for (const item of tasks) {
+    const task = await taskRepo.createTask(supabase, userId, {
       title: item.title,
       priority: item.priority ?? "medium",
       dueAt: item.dueDate ? zonedTimeToUtc(item.dueDate, item.dueTime, timezone).toISOString() : null,
       estimatedMinutes: item.estimatedMinutes ?? null,
       source,
     });
+    // The tiny first step becomes the task's first step, so Start can show it.
+    if (item.firstStep) await taskRepo.createSubtask(supabase, userId, task.id, item.firstStep, 0);
   }
-  return items.length;
+  return tasks.length;
 }

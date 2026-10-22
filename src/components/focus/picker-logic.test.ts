@@ -65,7 +65,7 @@ describe("pickAlternatives", () => {
 
 describe("gentleReason", () => {
   it("softens the reasons that could sound like a telling-off", () => {
-    expect(gentleReason("Overdue")).toBe("Ready to pick back up");
+    expect(gentleReason("From earlier")).toBe("Ready to pick back up");
     expect(gentleReason("Keeps getting pushed back")).toBe("Been waiting a while");
   });
 

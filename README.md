@@ -1,6 +1,6 @@
-# FocusFlow
+# Unstuck
 
-A calm companion for brains that start late. FocusFlow helps you get unstuck:
+A calm companion for brains that start late. Unstuck helps you get unstuck:
 **dump everything out, see what's next, make it easy to begin, focus, feel the win, keep going.**
 If life gets ahead of you, Rescue mode helps you reset without any guilt.
 

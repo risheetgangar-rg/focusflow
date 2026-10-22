@@ -1,6 +1,6 @@
 {
-  "name": "FocusFlow",
-  "short_name": "FocusFlow",
+  "name": "Unstuck",
+  "short_name": "Unstuck",
   "description": "A calm companion for brains that start late. Dump it out, see what's next, make it easy to begin.",
   "id": "/today",
   "start_url": "/today?from=pwa",

@@ -9,6 +9,9 @@ interface ProfileRow {
   theme: string;
   onboarding_completed: boolean;
   focus_areas: string[] | null;
+  last_seen_at: string | null;
+  away_since: string | null;
+  welcome_dismissed_on: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -22,6 +25,9 @@ function toProfile(row: ProfileRow): Profile {
     theme: row.theme,
     onboardingCompleted: row.onboarding_completed,
     focusAreas: row.focus_areas ?? [],
+    lastSeenAt: row.last_seen_at ?? null,
+    awaySince: row.away_since ?? null,
+    welcomeDismissedOn: row.welcome_dismissed_on ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -61,6 +67,9 @@ export interface ProfileUpdates {
   theme?: string;
   onboardingCompleted?: boolean;
   focusAreas?: string[];
+  lastSeenAt?: string | null;
+  awaySince?: string | null;
+  welcomeDismissedOn?: string | null;
 }
 
 export async function updateProfile(
@@ -77,6 +86,9 @@ export async function updateProfile(
       ...(updates.theme !== undefined && { theme: updates.theme }),
       ...(updates.onboardingCompleted !== undefined && { onboarding_completed: updates.onboardingCompleted }),
       ...(updates.focusAreas !== undefined && { focus_areas: updates.focusAreas }),
+      ...(updates.lastSeenAt !== undefined && { last_seen_at: updates.lastSeenAt }),
+      ...(updates.awaySince !== undefined && { away_since: updates.awaySince }),
+      ...(updates.welcomeDismissedOn !== undefined && { welcome_dismissed_on: updates.welcomeDismissedOn }),
     })
     .eq("id", userId)
     .select("*")

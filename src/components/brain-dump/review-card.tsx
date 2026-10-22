@@ -1,11 +1,18 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import type { EditableItem } from "@/components/brain-dump/brain-dump-items";
+import type { EditableItem, ItemChoice } from "@/components/brain-dump/brain-dump-items";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PillGroup } from "@/components/ui/pill-group";
 import type { ParsedTaskItem } from "@/types/brain-dump";
+
+const CHOICES = [
+  { value: "task", label: "Task" },
+  { value: "note", label: "Note" },
+  { value: "skip", label: "Skip" },
+];
 
 const PRIORITIES = [
   { value: "low", label: "Low" },
@@ -23,18 +30,26 @@ export function ReviewCard({
 }: {
   item: EditableItem;
   index: number;
-  onChange: (patch: Partial<ParsedTaskItem>) => void;
+  onChange: (patch: Partial<EditableItem>) => void;
   onRemove: () => void;
 }) {
   const n = index + 1;
   return (
-    <li className="rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-5">
+    <li className={cn("rounded-3xl border border-border bg-card p-4 shadow-soft transition-opacity sm:p-5", item.choice === "skip" && "opacity-55")}>
       <div className="flex items-start gap-3">
         <span className="mt-2.5 grid size-6 shrink-0 place-items-center rounded-full bg-brand-soft text-xs font-semibold text-brand">
           {n}
         </span>
 
         <div className="min-w-0 flex-1 space-y-3">
+          <PillGroup
+            name={`choice-${item.key}`}
+            ariaLabel={`Keep item ${n} as`}
+            options={CHOICES}
+            value={item.choice}
+            onValueChange={(value) => onChange({ choice: value as ItemChoice })}
+            optionClassName="h-8 px-3.5 text-xs"
+          />
           <Input
             value={item.title}
             onChange={(e) => onChange({ title: e.target.value })}
@@ -43,6 +58,13 @@ export function ReviewCard({
             className="h-12 text-base font-medium"
           />
 
+          {item.choice === "task" && (
+          <>
+          {item.firstStep && (
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">First step:</span> {item.firstStep}
+            </p>
+          )}
           <div className="flex flex-wrap items-center gap-2">
             <Input
               type="date"
@@ -69,6 +91,8 @@ export function ReviewCard({
             onValueChange={(value) => onChange({ priority: value as ParsedTaskItem["priority"] })}
             optionClassName="h-8 px-3.5 text-xs"
           />
+          </>
+          )}
         </div>
 
         <Button type="button" variant="ghost" size="icon-sm" onClick={onRemove} aria-label={`Remove task ${n}`}>

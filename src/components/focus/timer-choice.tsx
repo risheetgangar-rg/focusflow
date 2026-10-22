@@ -8,14 +8,10 @@ import { PillGroup } from "@/components/ui/pill-group";
 
 const OPTIONS = [
   { value: "none", label: "No timer" },
-  { value: "5", label: "5 min" },
-  { value: "10", label: "10 min" },
-  { value: "15", label: "15 min" },
-  { value: "25", label: "25 min" },
-  { value: "custom", label: "Custom" },
+  { value: "custom", label: "Set my own timer" },
 ];
 
-/** The optional timer: a few presets, or your own number. Nothing is required. */
+/** The optional timer: none, or exactly the number of minutes the person picks. No suggested lengths. */
 export function TimerChoice({
   value,
   onValueChange,
@@ -56,7 +52,7 @@ export function TimerChoice({
             <div className="flex flex-col items-center gap-1.5 p-1.5">
               <div className="flex items-center gap-3">
                 <label htmlFor={inputId} className="text-sm text-muted-foreground">
-                  Minutes
+                  How many minutes?
                 </label>
                 <Input
                   id={inputId}
@@ -70,7 +66,7 @@ export function TimerChoice({
                   className="h-11 w-24 text-center"
                 />
               </div>
-              {customInvalid && <p className="text-xs text-muted-foreground">Pick a number from 1 to {MAX_TIMER_MINUTES}.</p>}
+              {customInvalid && <p className="text-xs text-muted-foreground">Type any number from 1 to {MAX_TIMER_MINUTES}.</p>}
             </div>
           </m.div>
         )}

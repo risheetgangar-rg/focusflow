@@ -14,7 +14,7 @@ interface Step {
 const STEPS: Step[] = [
   {
     title: "Brain dump",
-    body: "Type it, paste it, or say it out loud. Messy is fine. FocusFlow pulls out the tasks and the dates for you.",
+    body: "Type it, paste it, or say it out loud. Messy is fine. Unstuck pulls out the tasks and the dates for you.",
     icon: PenLine,
     tint: "bg-tint-lavender",
   },

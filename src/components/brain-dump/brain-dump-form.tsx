@@ -14,7 +14,7 @@ import {
   EXAMPLES,
   MAX_CHARS,
   hasBlankTitle,
-  taskCountLabel,
+  saveLabel,
   toEditable,
   toPayload,
   wordCount,
@@ -23,7 +23,6 @@ import {
 import { ReviewCard } from "@/components/brain-dump/review-card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import type { ParsedTaskItem } from "@/types/brain-dump";
 
 const parseInitial: BrainDumpParseState = {};
 const confirmInitial: ConfirmState = {};
@@ -47,6 +46,7 @@ export function BrainDumpForm({
   const [items, setItems] = useState<EditableItem[] | null>(null);
   const [batch, setBatch] = useState(0);
   const [saved, setSaved] = useState<string[] | null>(null);
+  const [savedLabel, setSavedLabel] = useState("");
 
   // React to a fresh server result in the same render (no effect needed).
   const [seenParse, setSeenParse] = useState(parseState);
@@ -61,13 +61,14 @@ export function BrainDumpForm({
   if (confirmState !== seenConfirm) {
     setSeenConfirm(confirmState);
     if (confirmState.message && items) {
-      setSaved(items.map((item) => item.title.trim()));
+      setSaved(items.filter((item) => item.choice !== "skip").map((item) => item.title.trim()));
+      setSavedLabel(saveLabel(items));
       setItems(null);
       setText("");
     }
   }
 
-  function updateItem(key: string, patch: Partial<ParsedTaskItem>) {
+  function updateItem(key: string, patch: Partial<EditableItem>) {
     setItems((prev) => prev?.map((item) => (item.key === key ? { ...item, ...patch } : item)) ?? null);
   }
 
@@ -90,7 +91,7 @@ export function BrainDumpForm({
         <span className="mx-auto grid size-14 animate-pop place-items-center rounded-full bg-card/80">
           <Check size={26} />
         </span>
-        <p className="mt-5 font-display text-5xl sm:text-6xl">{taskCountLabel(saved.length)} added.</p>
+        <p className="mt-5 font-display text-5xl sm:text-6xl">Saved {savedLabel}.</p>
         <ul className="mx-auto mt-5 max-w-md space-y-1 text-foreground/70">
           {saved.slice(0, 4).map((title, i) => (
             <li key={`${title}-${i}`} className="truncate">
@@ -123,9 +124,9 @@ export function BrainDumpForm({
         <div>
           <p className="text-eyebrow">Step 2 of 2</p>
           <h2 className="mt-1.5 font-display text-4xl sm:text-5xl">
-            I found <em className="text-brand">{taskCountLabel(items.length)}</em>.
+            I found <em className="text-brand">{items.length} {items.length === 1 ? "thing" : "things"}</em>.
           </h2>
-          <p className="mt-2 text-muted-foreground">Fix anything that looks off. Nothing is saved until you press Save.</p>
+          <p className="mt-2 text-muted-foreground">Mark each one as a task, a note, or skip it. Fix anything that looks off. Nothing is saved until you press Save.</p>
         </div>
 
         <ul className="space-y-3">
@@ -163,10 +164,10 @@ export function BrainDumpForm({
             type="submit"
             variant="brand"
             size="xl"
-            disabled={confirming || hasBlankTitle(items)}
+            disabled={confirming || hasBlankTitle(items) || items.every((i) => i.choice === "skip")}
             className="sm:min-w-56"
           >
-            {confirming ? "Saving…" : `Save ${taskCountLabel(items.length)}`}
+            {confirming ? "Saving…" : `Save ${saveLabel(items)}`}
           </Button>
           <Button type="button" variant="ghost" size="lg" onClick={() => setItems(null)} disabled={confirming}>
             Back to my text
@@ -205,6 +206,17 @@ export function BrainDumpForm({
           </Button>
         </div>
       </div>
+
+      {parseState.support && (
+        <div role="alert" className="rounded-3xl bg-tint-lavender p-5 sm:p-6">
+          <p className="font-display text-3xl">That sounds really heavy.</p>
+          <p className="mt-2 text-foreground/80">
+            Your list can wait. If you&apos;re thinking about hurting yourself, please talk to someone right now. In India you can
+            call Tele-MANAS on <a href="tel:14416" className="font-semibold underline underline-offset-4">14416</a> (free, 24/7),
+            or reach a friend or family member you trust. If you&apos;re elsewhere, your local emergency number can connect you.
+          </p>
+        </div>
+      )}
 
       {parseState.error && (
         <p role="alert" className="px-1 text-sm text-destructive">

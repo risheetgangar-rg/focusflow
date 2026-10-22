@@ -28,7 +28,7 @@ export default function OfflinePage() {
       }
     >
       <p>
-        No problem. FocusFlow needs a connection for this page, and your tasks are safe. Pick up as soon as you&apos;re
+        No problem. Unstuck needs a connection for this page, and your tasks are safe. Pick up as soon as you&apos;re
         back online.
       </p>
     </CalmScreen>

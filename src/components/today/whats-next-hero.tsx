@@ -11,21 +11,13 @@ import { buttonVariants } from "@/components/ui/button";
 import { describeDue } from "@/lib/dates/format";
 import { companionStage } from "@/lib/gamification/rules";
 import { shouldSuggestBreakdown } from "@/lib/tasks/task-breaker";
-import { cn } from "@/lib/utils";
+import { timeLabel } from "@/lib/welcome-back/rules";
 import { recommendTop } from "@/services/recommendation-service";
 import type { Task } from "@/types/task";
 
-const TIME_CHOICES = [
-  { label: "5 min", minutes: 5 },
-  { label: "15 min", minutes: 15 },
-  { label: "30 min", minutes: 30 },
-  { label: "An hour+", minutes: 60 },
-];
-
 /**
  * The one answer Today exists to give: "what should I do right now?" Shows a
- * single task, why it was picked, and a big Start. Tell it how much time you
- * have and it re-ranks instantly, no round trip.
+ * single task, why it was picked, and a big Start.
  */
 export function WhatsNextHero({
   tasks,
@@ -39,12 +31,11 @@ export function WhatsNextHero({
   level: number;
 }) {
   const { timezone, mode } = useApp();
-  const [available, setAvailable] = useState<number | null>(null);
   const [offset, setOffset] = useState(0);
 
   const ranked = useMemo(
-    () => recommendTop(tasks, { now: new Date(nowIso), availableMinutes: available ?? undefined, timezone }, 4),
-    [tasks, nowIso, available, timezone],
+    () => recommendTop(tasks, { now: new Date(nowIso), timezone }, 4),
+    [tasks, nowIso, timezone],
   );
   const current = ranked.length > 0 ? ranked[offset % ranked.length] : null;
 
@@ -78,7 +69,7 @@ export function WhatsNextHero({
         <AnimatePresence mode="wait" initial={false}>
           {current ? (
             <m.div
-              key={`${current.task.id}-${available}`}
+              key={current.task.id}
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -88,6 +79,7 @@ export function WhatsNextHero({
               <p className="font-display text-4xl leading-[1.05] text-balance sm:text-6xl">{current.task.title}</p>
 
               <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="default">{timeLabel(current.task, new Date(nowIso), timezone)}</Badge>
                 <Badge variant="brand">{current.reason}</Badge>
                 {due && (
                   <Badge variant="secondary" className="bg-card/70">
@@ -141,31 +133,6 @@ export function WhatsNextHero({
           )}
         </AnimatePresence>
 
-        {tasks.some((t) => t.status === "pending" && t.estimatedMinutes) && (
-          <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-foreground/10 pt-5">
-            <span className="mr-1 text-sm text-foreground/60">I have</span>
-            {TIME_CHOICES.map((choice) => {
-              const active = available === choice.minutes;
-              return (
-                <button
-                  key={choice.minutes}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => {
-                    setAvailable(active ? null : choice.minutes);
-                    setOffset(0);
-                  }}
-                  className={cn(
-                    "h-9 rounded-full border border-foreground/10 bg-card/60 px-4 text-sm font-medium transition-all hover:bg-card",
-                    active && "border-primary bg-primary text-primary-foreground hover:bg-primary",
-                  )}
-                >
-                  {choice.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
     </section>
   );

@@ -6,6 +6,8 @@ export const parsedTaskItemSchema = z.object({
   dueTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   priority: z.enum(["low", "medium", "high", "critical"]).optional(),
   estimatedMinutes: z.number().int().positive().optional(),
+  kind: z.enum(["task", "note"]).optional(),
+  firstStep: z.string().trim().min(1).max(120).optional(),
 });
 
 export const parsedBrainDumpSchema = z.object({

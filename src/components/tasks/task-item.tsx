@@ -3,7 +3,7 @@
 import { useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { AnimatePresence, m } from "motion/react";
-import { CalendarClock, ChevronDown, Clock, MoreHorizontal, Moon, Play, Repeat, Swords, Zap } from "lucide-react";
+import { CalendarClock, ChevronDown, Clock, MoreHorizontal, Moon, Play, Repeat, Siren, Swords, Zap } from "lucide-react";
 import {
   cancelTaskAction,
   completeTaskAction,
@@ -29,6 +29,7 @@ import { bossStatus } from "@/lib/tasks/boss";
 import { shouldSuggestBreakdown } from "@/lib/tasks/task-breaker";
 import { cn } from "@/lib/utils";
 import { isWaiting } from "@/services/recommendation-service";
+import { announceTaskDone } from "@/components/today/today-progress";
 import { StepsEditor } from "./steps-editor";
 import type { Subtask, Task } from "@/types/task";
 
@@ -54,6 +55,8 @@ export function TaskItem({
 
   const now = new Date(nowIso);
   const due = task.dueAt ? describeDue(task.dueAt, now, timezone) : null;
+  // High-priority work is shown like an emergency: red edge, red label, pulled to the top of lists.
+  const urgent = (task.priority === "high" || task.priority === "critical") && !optimisticDone;
   // Snoozed, or planned for later than its due date: say when it's coming back.
   const plan = task.scheduledAt && task.scheduledAt !== task.dueAt && isWaiting(task, now) ? describeDue(task.scheduledAt, now, timezone) : null;
   const planLabel = plan ? (plan.tone === "today" ? `Back at ${plan.label.split(" · ")[1] ?? "later"}` : `Planned ${plan.label}`) : null;
@@ -66,6 +69,8 @@ export function TaskItem({
   });
 
   function toggleDone(checked: boolean) {
+    // Outside the transition, so the Today ring moves right away instead of after the save.
+    announceTaskDone(checked ? 1 : -1);
     startTransition(async () => {
       setOptimisticDone(checked);
       if (!checked) {
@@ -100,7 +105,8 @@ export function TaskItem({
   return (
     <div
       className={cn(
-        "group rounded-2xl border border-border bg-card px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:shadow-soft",
+        "group relative overflow-hidden rounded-2xl border border-border bg-card px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:shadow-soft",
+        urgent && "border-destructive/45 bg-destructive/[0.06] pl-5 shadow-[0_8px_24px_-14px_var(--destructive)] before:absolute before:inset-y-0 before:left-0 before:w-1.5 before:bg-destructive",
         optimisticDone && "opacity-60",
       )}
     >
@@ -140,8 +146,13 @@ export function TaskItem({
                 <Clock /> {task.estimatedMinutes} min
               </Badge>
             )}
-            {task.priority === "critical" && <Badge variant="rose">Critical</Badge>}
-            {task.priority === "high" && <Badge variant="peach">High priority</Badge>}
+            {urgent && (
+              <Badge variant="destructive" className="bg-destructive font-semibold text-white">
+                <Siren /> Urgent
+              </Badge>
+            )}
+            {task.priority === "medium" && <Badge variant="sky">Medium</Badge>}
+            {task.priority === "low" && <Badge variant="mint">Low</Badge>}
             {task.isBoss && (
               <Badge variant="rose">
                 <Swords /> Boss

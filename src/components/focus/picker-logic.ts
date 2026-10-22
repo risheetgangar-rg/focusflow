@@ -27,7 +27,7 @@ export function pickAlternatives(
 }
 
 const GENTLE_REASONS: Record<string, string> = {
-  Overdue: "Ready to pick back up",
+  "From earlier": "Ready to pick back up",
   "Keeps getting pushed back": "Been waiting a while",
 };
 

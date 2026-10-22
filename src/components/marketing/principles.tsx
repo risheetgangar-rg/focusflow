@@ -33,7 +33,7 @@ export function Principles() {
           </Reveal>
           <Reveal inView delay={0.14}>
             <p className="mx-auto mt-8 max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-              A long to-do list feels heavy before you&apos;ve done a single thing. FocusFlow keeps that weight off your
+              A long to-do list feels heavy before you&apos;ve done a single thing. Unstuck keeps that weight off your
               screen and out of your head, so all that&apos;s left is the next small step.
             </p>
           </Reveal>

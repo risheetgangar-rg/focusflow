@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-/** The FocusFlow mark: concentric rings (focus) inside a soft square. */
+/** The Unstuck mark: concentric rings (focus) inside a soft square. */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" aria-hidden className={cn("size-8", className)}>
@@ -16,7 +16,7 @@ export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={cn("flex items-center gap-2.5", className)}>
       <LogoMark />
-      <span className="font-display text-[1.65rem] leading-none">FocusFlow</span>
+      <span className="font-display text-[1.65rem] leading-none">Unstuck</span>
     </span>
   );
 }

@@ -41,7 +41,7 @@ const TILES: TileProps[] = [
     eyebrow: "Capture",
     icon: PenLine,
     title: "Brain dump",
-    body: "Type or say everything at once. FocusFlow sorts it into tasks with dates and times filled in, and you check it before anything is saved.",
+    body: "Type or say everything at once. Unstuck sorts it into tasks with dates and times filled in, and you check it before anything is saved.",
     visual: <BrainDumpVisual />,
   },
   {

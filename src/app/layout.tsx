@@ -14,13 +14,13 @@ const displaySerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: { default: "FocusFlow — get unstuck", template: "%s · FocusFlow" },
+  title: { default: "Unstuck — one step at a time", template: "%s · Unstuck" },
   description:
     "A calm, friendly companion for brains that start late: dump everything out, see what to do next, and make it easy to begin.",
   manifest: "/manifest.json",
   icons: { icon: "/icon.svg", apple: "/apple-touch-icon.png" },
   openGraph: {
-    title: "FocusFlow — get unstuck",
+    title: "Unstuck — one step at a time",
     description: "Dump it all out. See what's next. Make it easy to begin.",
     type: "website",
   },

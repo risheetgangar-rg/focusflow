@@ -53,7 +53,7 @@ export function FocusStart({
   const { mode } = useApp();
 
   const [timer, setTimer] = useState<TimerValue>("none");
-  const [custom, setCustom] = useState("20");
+  const [custom, setCustom] = useState("");
   const selection = resolveTimer(timer, custom);
 
   const hasSteps = stepCount > 0;

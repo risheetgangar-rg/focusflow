@@ -5,6 +5,8 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { MobileTopBar } from "@/components/layout/mobile-top-bar";
 import { QuickAddProvider } from "@/components/layout/quick-add-provider";
 import { AppProviders } from "@/components/providers/app-providers";
+import { WinLayer } from "@/components/rewards/win-layer";
+import { NextUpNotifier } from "@/components/notifications/next-up-notifier";
 import { requireSession } from "@/lib/auth/session";
 import { getState } from "@/repositories/gamification-repository";
 
@@ -39,6 +41,8 @@ export default async function AppShellLayout({ children }: { children: React.Rea
           </main>
         </div>
         <MobileNav />
+        <WinLayer />
+        <NextUpNotifier />
       </QuickAddProvider>
     </AppProviders>
   );

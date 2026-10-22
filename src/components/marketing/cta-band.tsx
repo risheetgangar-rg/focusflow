@@ -25,7 +25,7 @@ function Rings() {
 export function CtaBand() {
   return (
     <section className="px-3 pb-4 sm:px-6 sm:pb-6">
-      <div className="bg-grain relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-primary px-7 py-20 text-primary-foreground sm:px-16 sm:py-28">
+      <div className="bg-grain relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-brand-gradient px-7 py-20 text-primary-foreground sm:px-16 sm:py-28">
         <Rings />
 
         <div className="relative max-w-2xl">
@@ -42,13 +42,14 @@ export function CtaBand() {
           <Reveal inView delay={0.18}>
             <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
               <Link
-                href="/signup"
+                href="/try"
+                prefetch={false}
                 className={cn(
                   buttonVariants({ size: "xl" }),
                   "bg-primary-foreground text-primary hover:bg-primary-foreground/90",
                 )}
               >
-                Start free
+                Try the comeback
                 <ArrowRight aria-hidden />
               </Link>
               <Link

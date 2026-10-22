@@ -1,10 +1,10 @@
-import { LifeBuoy, PenLine, Repeat, Sparkles, Target, Timer } from "lucide-react";
+import { LifeBuoy, Target, Timer } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RevealGroup, RevealItem } from "./motion-bits";
 import { SectionHeading } from "./section-heading";
-import { BrainDumpVisual, FocusVisual, WhatsNextVisual } from "./visuals-flow";
-import { HabitsVisual, RescueVisual, RewardsVisual } from "./visuals-care";
+import { FocusVisual, WhatsNextVisual } from "./visuals-flow";
+import { RescueVisual } from "./visuals-care";
 
 interface TileProps {
   tint: string;
@@ -36,15 +36,6 @@ function Tile({ tint, span, eyebrow, icon: Icon, title, body, visual }: TileProp
 
 const TILES: TileProps[] = [
   {
-    tint: "bg-tint-lavender",
-    span: "md:col-span-6 lg:col-span-7",
-    eyebrow: "Capture",
-    icon: PenLine,
-    title: "Brain dump",
-    body: "Type or say everything at once. Unstuck sorts it into tasks with dates and times filled in, and you check it before anything is saved.",
-    visual: <BrainDumpVisual />,
-  },
-  {
     tint: "bg-tint-peach",
     span: "md:col-span-3 lg:col-span-5",
     eyebrow: "Decide",
@@ -55,43 +46,21 @@ const TILES: TileProps[] = [
   },
   {
     tint: "bg-tint-sky",
-    span: "md:col-span-3 lg:col-span-5",
+    span: "md:col-span-3 lg:col-span-7",
     eyebrow: "Do",
     icon: Timer,
-    title: "Focus mode",
-    body: "A quiet screen with one step and a gentle timer. Nothing else competes for your attention.",
+    title: "Lock in",
+    body: "Tap Lock in and the card becomes a calm timer, right there on Today. One step, nothing else competing for your attention.",
     visual: <FocusVisual />,
   },
   {
     tint: "bg-tint-rose",
-    span: "md:col-span-6 lg:col-span-7",
-    eyebrow: "Recover",
+    span: "md:col-span-6 lg:col-span-12",
+    eyebrow: "Come back",
     icon: LifeBuoy,
-    title: "Rescue mode",
-    body: "Had a few off days? Pick one thing to start with and move the rest in a tap. No red numbers, no guilt.",
+    title: "The comeback",
+    body: "Been away a few days? You see one tiny win, not a wall of old tasks. Move your plan forward in one tap, and undo it if you change your mind.",
     visual: <RescueVisual />,
-  },
-  {
-    tint: "bg-tint-mint",
-    span: "md:col-span-3 lg:col-span-7",
-    eyebrow: "Keep",
-    icon: Repeat,
-    title: (
-      <>
-        No broken streaks. <em>Ever.</em>
-      </>
-    ),
-    body: "Set a weekly goal instead of a daily chain. Do it on whichever days work and the week still counts.",
-    visual: <HabitsVisual />,
-  },
-  {
-    tint: "bg-tint-butter",
-    span: "md:col-span-3 lg:col-span-5",
-    eyebrow: "Reward",
-    icon: Sparkles,
-    title: "Rewards, your way",
-    body: "XP, levels and a little companion that grows with you. Turn it all off, keep it light, or go full game.",
-    visual: <RewardsVisual />,
   },
 ];
 

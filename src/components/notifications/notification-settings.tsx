@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isPushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/notifications/subscribe";
+import { NextUpSetting } from "./next-up-setting";
 import type { NotificationPreferences } from "@/types/reminder";
 
 type PrefsState = NotificationPrefsState & { savedKey?: string };
@@ -175,6 +176,7 @@ export function NotificationSettings({ prefs }: { prefs: NotificationPreferences
             off any time.
           </p>
           <div className="pt-3">{status()}</div>
+          {permission === "granted" && <NextUpSetting />}
         </div>
       </div>
 

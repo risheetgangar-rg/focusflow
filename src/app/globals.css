@@ -5,9 +5,15 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: Arial, "Helvetica Neue", Helvetica, ui-sans-serif, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
-  --font-display: var(--font-display-serif), "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-display: var(--font-horizon), Arial Black, Arial, sans-serif;
+  --font-outline: var(--font-horizon-outline), var(--font-horizon), Arial Black, sans-serif;
+  --color-indigo: var(--indigo);
+  --color-royal: var(--royal);
+  --color-periwinkle: var(--periwinkle);
+  --color-lime: var(--lime);
+  --color-sunny: var(--sunny);
   --font-heading: var(--font-sans);
 
   --color-background: var(--background);
@@ -52,6 +58,9 @@
   --color-tint-butter: var(--tint-butter);
   --color-tint-sky: var(--tint-sky);
   --color-tint-rose: var(--tint-rose);
+  --color-urgency-now: var(--urgency-now);
+  --color-urgency-soon: var(--urgency-soon);
+  --color-urgency-whenever: var(--urgency-whenever);
 
   --radius-sm: calc(var(--radius) * 0.5);
   --radius-md: calc(var(--radius) * 0.75);
@@ -72,52 +81,70 @@
   --animate-pan: pan 18s ease-in-out infinite;
 }
 
+/*
+ * Urgency colours (build plan step 6). PLACEHOLDERS: pick the real colours here.
+ * Tip: make "now" the strongest. If you use red, use it only for "now".
+ * Past-date tasks never use these; they show as "Parked" in a calm neutral.
+ */
+:root {
+  --urgency-now: var(--brand);
+  --urgency-soon: var(--foreground);
+  --urgency-whenever: var(--muted-foreground);
+}
+
 /* ---------- Themes. Paper is the default; the rest are unlockable cosmetics. ---------- */
 
 :root,
 [data-theme="paper"] {
-  --background: #faf9f6;
-  --foreground: #171715;
+  /* Unstuck brand: deep indigo -> royal blue -> periwinkle, with a lime/yellow spark. White page. */
+  --indigo: #1a00a8;
+  --royal: #1446c8;
+  --periwinkle: #5c87ea;
+  --lime: #e6f05a;
+  --sunny: #ffe066;
+  --gradient-brand: linear-gradient(135deg, var(--indigo) 0%, var(--royal) 55%, var(--periwinkle) 100%);
+  --background: #ffffff;
+  --foreground: #12103a;
   --card: #ffffff;
-  --card-foreground: #171715;
+  --card-foreground: #12103a;
   --popover: #ffffff;
-  --popover-foreground: #171715;
-  --primary: #171715;
-  --primary-foreground: #faf9f6;
-  --secondary: #f1efe9;
-  --secondary-foreground: #171715;
-  --muted: #f1efe9;
-  --muted-foreground: #6b6962;
-  --accent: #ece9e1;
-  --accent-foreground: #171715;
-  --destructive: #cf4a31;
-  --border: #e8e5dd;
-  --input: #dfdcd3;
-  --ring: #5b4bf0;
-  --brand: #5b4bf0;
+  --popover-foreground: #12103a;
+  --primary: #1a00a8;
+  --primary-foreground: #ffffff;
+  --secondary: #eff2fd;
+  --secondary-foreground: #12103a;
+  --muted: #f3f5fc;
+  --muted-foreground: #5d6185;
+  --accent: #e8edfc;
+  --accent-foreground: #12103a;
+  --destructive: #c8402e;
+  --border: #e3e7f5;
+  --input: #d6dcf1;
+  --ring: #1446c8;
+  --brand: #1446c8;
   --brand-foreground: #ffffff;
-  --brand-soft: #ece9ff;
-  --surface: #f4f2ed;
-  --tint-lavender: #ece9ff;
-  --tint-mint: #def3e6;
-  --tint-peach: #ffe7d6;
-  --tint-butter: #fff3c4;
-  --tint-sky: #dcebff;
-  --tint-rose: #ffe1e6;
-  --chart-1: #5b4bf0;
-  --chart-2: #3f9d6b;
-  --chart-3: #e8883a;
-  --chart-4: #3b82c4;
-  --chart-5: #d4537e;
+  --brand-soft: #e6ecfd;
+  --surface: #f6f8fe;
+  --tint-lavender: #eae8fb;
+  --tint-mint: #eef6d6;
+  --tint-peach: #fdf4d4;
+  --tint-butter: #f6fac8;
+  --tint-sky: #e1e9fc;
+  --tint-rose: #ede7fb;
+  --chart-1: #1a00a8;
+  --chart-2: #1446c8;
+  --chart-3: #5c87ea;
+  --chart-4: #c4cf2e;
+  --chart-5: #8aa7f0;
   --radius: 1rem;
-  --sidebar: #f4f2ed;
-  --sidebar-foreground: #171715;
-  --sidebar-primary: #171715;
-  --sidebar-primary-foreground: #faf9f6;
-  --sidebar-accent: #e9e6de;
-  --sidebar-accent-foreground: #171715;
-  --sidebar-border: #e6e3da;
-  --sidebar-ring: #5b4bf0;
+  --sidebar: #1a00a8;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #e6f05a;
+  --sidebar-primary-foreground: #1a00a8;
+  --sidebar-accent: rgb(255 255 255 / 0.1);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 0.14);
+  --sidebar-ring: #e6f05a;
   color-scheme: light;
 }
 
@@ -290,13 +317,30 @@
   .font-display {
     font-family: var(--font-display);
     font-weight: 400;
-    letter-spacing: -0.02em;
+    font-style: normal;
+    letter-spacing: 0.005em;
+    line-height: 1.05;
+  }
+  /* Horizon has no italic. On white, emphasis is solid royal blue; on the indigo panels it becomes the outlined cut. */
+  .font-display em {
+    font-style: normal;
+    color: var(--royal);
+  }
+  .text-white .font-display em,
+  .font-outline {
+    font-family: var(--font-outline);
+    font-style: normal;
+    color: inherit;
+  }
+  .bg-brand-gradient {
+    background-image: var(--gradient-brand);
   }
   .text-eyebrow {
     @apply text-xs font-medium tracking-[0.14em] uppercase text-muted-foreground;
   }
+  /* Duolingo-style "ledge" under cards instead of a blurry shadow. */
   .shadow-soft {
-    box-shadow: var(--shadow-soft);
+    box-shadow: 0 4px 0 var(--border);
   }
   .shadow-lift {
     box-shadow: var(--shadow-lift);
@@ -409,4 +453,19 @@
   to {
     transform: translateY(-50%);
   }
+}
+
+/* Chunky, friendly outlines (Duolingo-style): every full border is 2px. */
+html .border {
+  border-width: 2px;
+}
+
+/* A little bounce when something new pops in. */
+@keyframes duo-pop {
+  0% { transform: scale(0.9); opacity: 0; }
+  60% { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.animate-duo-pop {
+  animation: duo-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }

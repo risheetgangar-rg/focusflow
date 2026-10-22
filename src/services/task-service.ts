@@ -27,7 +27,8 @@ export async function completeTask(
 
   // Completing twice (complete, undo, complete) must not stack up copies of tomorrow's task.
   if (task.recurrenceRule && !(await taskRepo.findRecurringChild(supabase, taskId))) {
-    const base = task.dueAt ? new Date(task.dueAt) : new Date();
+    // From whichever is later, its date or now, so a late finish never schedules the next one in the past.
+    const base = new Date(Math.max(task.dueAt ? Date.parse(task.dueAt) : 0, Date.now()));
     const next = nextOccurrence(task.recurrenceRule, base);
     await taskRepo.createTask(supabase, userId, {
       title: task.title,
@@ -40,6 +41,9 @@ export async function completeTask(
       dueAt: next.toISOString(),
       recurrenceRule: task.recurrenceRule,
       parentTaskId: taskId,
+      kind: task.kind,
+      taskType: task.taskType,
+      mustDo: task.mustDo,
       source: "recurring",
     });
   }

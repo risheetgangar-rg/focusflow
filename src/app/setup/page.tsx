@@ -47,7 +47,7 @@ export default function SetupPage() {
       </div>
 
       <div className="mx-auto w-full max-w-2xl">
-        <LogoLink />
+        <LogoLink onLight />
 
         <div className="py-16 sm:py-24">
           <Rise>

@@ -14,6 +14,18 @@ import type { GamificationMode } from "@/types/user";
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   const Icon = item.icon;
+  if (item.comingSoon) {
+    return (
+      <span
+        aria-disabled="true"
+        className="flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-white/60"
+      >
+        <Icon size={18} />
+        {item.label}
+        <span className="ml-auto shrink-0 rounded-full bg-white/15 px-2 py-0.5 text-[0.65rem] font-semibold whitespace-nowrap text-white">Soon</span>
+      </span>
+    );
+  }
   return (
     <Link
       href={item.href}
@@ -21,13 +33,13 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       className={cn(
         "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-150",
         active
-          ? "bg-card text-foreground shadow-soft"
-          : "text-foreground/70 hover:bg-sidebar-accent hover:text-foreground",
+          ? "bg-white text-indigo shadow-soft"
+          : "text-white hover:bg-white/12",
       )}
     >
       <Icon
         size={18}
-        className={cn("transition-colors", active ? "text-brand" : "text-muted-foreground group-hover:text-foreground")}
+        className={cn("transition-colors", active ? "text-royal" : "text-white/85 group-hover:text-white")}
       />
       {item.label}
     </Link>
@@ -53,7 +65,7 @@ export function AppSidebar({
   const { openCapture } = useQuickAdd();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[17rem] flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[17rem] flex-col border-r border-sidebar-border bg-brand-gradient text-sidebar-foreground lg:flex">
       <div className="px-6 pt-7 pb-5">
         <Link href="/today" aria-label="Unstuck home">
           <Wordmark />
@@ -61,11 +73,11 @@ export function AppSidebar({
       </div>
 
       <div className="px-4">
-        <Button size="lg" onClick={openCapture} className="w-full justify-between pr-4 pl-5">
+        <Button size="lg" onClick={openCapture} className="w-full justify-between bg-sunny pr-4 pl-5 text-indigo [--btn-shade:#c9a92c] hover:brightness-105">
           <span className="flex items-center gap-2">
             <Plus /> Add something
           </span>
-          <kbd className="rounded-md bg-primary-foreground/15 px-1.5 py-0.5 font-mono text-[0.7rem]">/</kbd>
+          <kbd className="rounded-md bg-indigo/10 px-1.5 py-0.5 font-mono text-[0.7rem]">/</kbd>
         </Button>
       </div>
 
@@ -75,7 +87,7 @@ export function AppSidebar({
           if (items.length === 0) return null;
           return (
             <div key={group.title}>
-              <p className="text-eyebrow mb-1.5 px-3">{group.title}</p>
+              <p className="mb-2 px-3 text-[0.7rem] font-bold tracking-[0.16em] text-sunny uppercase">{group.title}</p>
               <div className="space-y-0.5">
                 {items.map((item) => (
                   <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} />

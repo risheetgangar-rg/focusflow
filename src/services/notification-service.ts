@@ -20,6 +20,8 @@ export interface NotificationPayload {
   title: string;
   body: string;
   url?: string;
+  /** Lets the notification offer a ✓ Done button for this task. */
+  taskId?: string;
 }
 
 export interface SendResult {

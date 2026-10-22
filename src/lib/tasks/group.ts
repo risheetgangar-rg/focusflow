@@ -14,7 +14,7 @@ export function groupSubtasks(subtasks: Subtask[]): Record<string, Subtask[]> {
 export type TaskBucket = "earlier" | "today" | "upcoming" | "someday" | "done";
 
 export const BUCKET_LABELS: Record<TaskBucket, string> = {
-  earlier: "From earlier",
+  earlier: "Parked, not lost",
   today: "Today",
   upcoming: "Coming up",
   someday: "Someday",

@@ -1,51 +1,33 @@
-"use client";
-
 import Link from "next/link";
-import { useActionState } from "react";
 import { ArrowRight } from "lucide-react";
-import { signInAsGuest, type AuthFormState } from "@/app/(auth)/actions";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-const initialState: AuthFormState = {};
-
-/** The two hero calls to action. "Try it as a guest" signs in anonymously, so there's nothing to fill in. */
+/**
+ * The hero calls to action. "Try the comeback" makes a guest with sample
+ * tasks and drops you straight on the comeback screen: no email, no password.
+ */
 export function HeroActions() {
-  const [state, guestAction, pending] = useActionState(signInAsGuest, initialState);
-
   return (
     <div className="flex flex-col items-center gap-5">
       <div className="flex w-full max-w-sm flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row">
-        <Link href="/signup" className={buttonVariants({ size: "xl" })}>
-          Start free
+        {/* No prefetch: opening /try creates a guest, so it should only happen on a real tap. */}
+        <Link href="/try" prefetch={false} className={cn(buttonVariants({ size: "xl" }), "bg-sunny text-indigo [--btn-shade:#c9a92c] hover:bg-sunny")}>
+          Try the comeback
           <ArrowRight aria-hidden />
         </Link>
-        <form
-          action={(formData: FormData) => {
-        // The browser's timezone, read on submit, so the sample tasks land on the right days.
-        formData.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
-        return guestAction(formData);
-      }}
-          className="flex"
-        >
-          <Button type="submit" variant="outline" size="xl" disabled={pending} className="w-full flex-1">
-            {pending ? "Setting things up…" : "Try it as a guest"}
-          </Button>
-        </form>
+        <Link href="/signup" className={cn(buttonVariants({ variant: "outline", size: "xl" }), "border-white/40 bg-transparent text-white hover:bg-white/10")}>
+          Start free
+        </Link>
       </div>
 
-      {state.error ? (
-        <p role="alert" className="max-w-sm text-center text-sm text-destructive">
-          {state.error}
-        </p>
-      ) : null}
-
-      <p className="text-sm text-muted-foreground">
-        Guest mode opens a sample list to play with. No email or password.{" "}
+      <p className="text-sm text-white/70">
+        No email or password needed to try it.{" "}
         <span className="whitespace-nowrap">
           Already have an account?{" "}
           <Link
             href="/login"
-            className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-brand"
+            className="font-medium text-white underline underline-offset-4 transition-colors hover:text-sunny"
           >
             Log in
           </Link>

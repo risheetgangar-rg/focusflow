@@ -48,11 +48,11 @@ export function UserMenu({
         <Avatar name={name} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium">{name}</span>
-          <span className="block truncate text-xs text-muted-foreground">
+          <span className="block truncate text-xs text-white/60">
             {isGuest ? "Guest · tap to keep your data" : email}
           </span>
         </span>
-        <ChevronsUpDown size={16} className="shrink-0 text-muted-foreground" />
+        <ChevronsUpDown size={16} className="shrink-0 text-white/60" />
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" className="w-60">
         <DropdownMenuItem render={<Link href="/settings" />}>

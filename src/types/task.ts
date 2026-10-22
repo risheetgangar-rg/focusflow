@@ -1,7 +1,12 @@
 export type TaskStatus = "pending" | "completed" | "cancelled";
 export type TaskPriority = "low" | "medium" | "high" | "critical";
 export type TaskSource = "manual" | "brain_dump" | "voice" | "recurring";
-export type RecurrenceRule = "daily" | "weekly" | "monthly";
+export type RecurrenceRule = "daily" | "twice_weekly" | "thrice_weekly" | "weekly" | "monthly";
+export type TaskType = "bills" | "work" | "calls" | "home" | "health" | "other";
+/** Dread meter: how it felt compared with how heavy it seemed. */
+export type Felt = "easier" | "same" | "harder";
+/** A task is something you do (with a timer); a reminder is a nudge at a time. */
+export type TaskKind = "task" | "reminder";
 
 export interface Task {
   id: string;
@@ -23,6 +28,14 @@ export interface Task {
   startedAt: string | null;
   postponedCount: number;
   isBoss: boolean;
+  /** Appointments and other fixed things: never moved when the plan shifts forward. */
+  fixedDate: boolean;
+  /** The "Must do" star. */
+  mustDo: boolean;
+  taskType: TaskType;
+  /** Set by one optional tap after finishing. */
+  felt?: Felt | null;
+  kind?: TaskKind;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,6 +63,10 @@ export interface TaskInput {
   scheduledAt?: string | null;
   recurrenceRule?: RecurrenceRule | null;
   isBoss?: boolean;
+  fixedDate?: boolean;
+  mustDo?: boolean;
+  taskType?: TaskType;
+  kind?: TaskKind;
   /** For a recurring series: the occurrence this one was generated from. */
   parentTaskId?: string | null;
 }

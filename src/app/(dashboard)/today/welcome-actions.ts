@@ -52,6 +52,8 @@ export async function moveForwardAction(): Promise<{ ok: boolean; moved: number;
     changes.map((c) => ({ taskId: c.taskId, dueAt: c.newDueAt, scheduledAt: c.newScheduledAt })),
   );
   await track(supabase, userId, "rescue_completed", { kind: "move_forward", days, moved: changes.length });
+  // The pile is sorted, so the next visit is a normal day (with Undo still on screen for 24 hours).
+  await updateProfile(supabase, userId, { awaySince: null, welcomeDismissedOn: zonedDateString(new Date(), session.timezone) });
 
   refresh();
   return { ok: true, moved: changes.length, shiftId: shift.id };

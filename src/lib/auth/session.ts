@@ -38,7 +38,9 @@ export const getSession = cache(async (): Promise<Session | null> => {
     userId: claims.sub,
     email: typeof claims.email === "string" && claims.email ? claims.email : null,
     isGuest: claims.is_anonymous === true,
-    profile,
+    // Build plan step 4: no XP, levels, streaks or badges. Switched off for everyone here
+    // (the code stays, so it can come back later as an opt-in experiment).
+    profile: { ...profile, gamificationMode: "off" },
     timezone: resolveTimezone(profile.timezone),
   };
 });

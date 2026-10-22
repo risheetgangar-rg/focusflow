@@ -12,8 +12,14 @@ export const taskFormSchema = z.object({
   dueTime: z.string().optional().or(z.literal("")),
   scheduledDate: z.string().optional().or(z.literal("")),
   scheduledTime: z.string().optional().or(z.literal("")),
-  recurrenceRule: z.enum(["none", "daily", "weekly", "monthly"]).default("none"),
+  recurrenceRule: z.enum(["none", "daily", "twice_weekly", "thrice_weekly", "weekly", "monthly"]).default("none"),
   isBoss: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()).default(false),
+  taskType: z.enum(["bills", "work", "calls", "home", "health", "other"]).default("other"),
+  mustDo: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()).default(false),
+  fixedDate: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()).default(false),
+  kind: z.enum(["task", "reminder"]).default("task"),
+  /** Optional free text for the kind of task ("bills", "gym stuff"); matched to a type. */
+  kindText: z.string().trim().max(60).optional().or(z.literal("")),
 });
 
 export type TaskFormValues = z.infer<typeof taskFormSchema>;

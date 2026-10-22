@@ -11,7 +11,7 @@ export function AuthShell({ panel, children }: { panel: AuthPanelVariant; childr
     <>
       <div className="flex min-h-dvh flex-col px-5 py-6 sm:px-10 lg:px-14 lg:py-8">
         <header>
-          <LogoLink />
+          <LogoLink onLight />
         </header>
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10 sm:py-14">
           <Rise>{children}</Rise>

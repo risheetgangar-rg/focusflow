@@ -3,10 +3,10 @@
 import { useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { AnimatePresence, m } from "motion/react";
-import { CalendarClock, ChevronDown, Clock, MoreHorizontal, Moon, Play, Repeat, Siren, Swords, Zap } from "lucide-react";
+import { CalendarClock, ChevronDown, Hourglass, MoreHorizontal, Repeat, Target } from "lucide-react";
 import {
   cancelTaskAction,
-  completeTaskAction,
+
   rescheduleTaskAction,
   restoreTaskAction,
   snoozeTaskAction,
@@ -25,15 +25,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { describeDue } from "@/lib/dates/format";
-import { bossStatus } from "@/lib/tasks/boss";
-import { shouldSuggestBreakdown } from "@/lib/tasks/task-breaker";
 import { cn } from "@/lib/utils";
-import { isWaiting } from "@/services/recommendation-service";
 import { announceTaskDone } from "@/components/today/today-progress";
+import { finishTaskAction } from "@/app/(dashboard)/today/card-actions";
+import { announceWin } from "@/components/rewards/win-layer";
 import { StepsEditor } from "./steps-editor";
+import { REPEAT_LABEL } from "@/lib/dates/recurrence";
+import { TONE_STYLE, toneOf } from "@/lib/tasks/tone";
+import { canWaitFor, useWaitingMode } from "./waiting-mode";
 import type { Subtask, Task } from "@/types/task";
 
-const DUE_VARIANT = { past: "butter", today: "brand", soon: "lavender", later: "secondary" } as const;
+// Past dates are calm and neutral, never alarming.
+const DUE_VARIANT = { past: "secondary", today: "secondary", soon: "secondary", later: "secondary" } as const;
 
 export function TaskItem({
   task,
@@ -48,25 +51,18 @@ export function TaskItem({
   onOpen: (task: Task) => void;
 }) {
   const { timezone } = useApp();
-  const { celebrate, notify } = useCelebration();
+  const { notify } = useCelebration();
   const [, startTransition] = useTransition();
   const [expanded, setExpanded] = useState(false);
+  const startWaiting = useWaitingMode();
+  const isReminder = task.kind === "reminder";
   const [optimisticDone, setOptimisticDone] = useOptimistic(task.status === "completed");
 
   const now = new Date(nowIso);
   const due = task.dueAt ? describeDue(task.dueAt, now, timezone) : null;
-  // High-priority work is shown like an emergency: red edge, red label, pulled to the top of lists.
-  const urgent = (task.priority === "high" || task.priority === "critical") && !optimisticDone;
-  // Snoozed, or planned for later than its due date: say when it's coming back.
-  const plan = task.scheduledAt && task.scheduledAt !== task.dueAt && isWaiting(task, now) ? describeDue(task.scheduledAt, now, timezone) : null;
-  const planLabel = plan ? (plan.tone === "today" ? `Back at ${plan.label.split(" · ")[1] ?? "later"}` : `Planned ${plan.label}`) : null;
+  // One colour instead of labels: parked, right now, soon or whenever.
+  const tone = toneOf(task, now);
   const doneSteps = subtasks.filter((s) => s.completed).length;
-  const boss = task.isBoss ? bossStatus(subtasks) : null;
-  const needsPush = shouldSuggestBreakdown({
-    friction: task.friction,
-    estimatedMinutes: task.estimatedMinutes,
-    subtaskCount: subtasks.length,
-  });
 
   function toggleDone(checked: boolean) {
     // Outside the transition, so the Today ring moves right away instead of after the save.
@@ -77,10 +73,9 @@ export function TaskItem({
         await undoCompleteTaskAction(task.id);
         return;
       }
-      const outcome = await completeTaskAction(task.id);
-      const undo = () => void undoCompleteTaskAction(task.id);
-      if (outcome.reward || outcome.bossDefeated) celebrate(outcome, { undo });
-      else notify({ title: "Marked done", detail: task.title, action: { label: "Undo", onClick: undo } });
+      const win = await finishTaskAction(task.id);
+      announceWin(win);
+      notify({ title: "Marked done", detail: task.title, action: { label: "Undo", onClick: () => void undoCompleteTaskAction(task.id) } });
     });
   }
 
@@ -105,8 +100,8 @@ export function TaskItem({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-border bg-card px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:shadow-soft",
-        urgent && "border-destructive/45 bg-destructive/[0.06] pl-5 shadow-[0_8px_24px_-14px_var(--destructive)] before:absolute before:inset-y-0 before:left-0 before:w-1.5 before:bg-destructive",
+        "group relative overflow-hidden rounded-2xl border border-l-[6px] border-border bg-card px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:shadow-soft",
+        !optimisticDone && [TONE_STYLE[tone].edge, TONE_STYLE[tone].wash],
         optimisticDone && "opacity-60",
       )}
     >
@@ -136,39 +131,11 @@ export function TaskItem({
                 <CalendarClock /> {due.label}
               </Badge>
             )}
-            {planLabel && (
-              <Badge variant="sky">
-                <Moon /> {planLabel}
-              </Badge>
-            )}
-            {task.estimatedMinutes && (
-              <Badge variant="secondary">
-                <Clock /> {task.estimatedMinutes} min
-              </Badge>
-            )}
-            {urgent && (
-              <Badge variant="destructive" className="bg-destructive font-semibold text-white">
-                <Siren /> Urgent
-              </Badge>
-            )}
-            {task.priority === "medium" && <Badge variant="sky">Medium</Badge>}
-            {task.priority === "low" && <Badge variant="mint">Low</Badge>}
-            {task.isBoss && (
-              <Badge variant="rose">
-                <Swords /> Boss
-              </Badge>
-            )}
+            {/* No labels: the row's colour says how pressing it is (see the key above the list). */}
             {task.recurrenceRule && (
-              <Badge variant="outline">
-                <Repeat /> {task.recurrenceRule}
-              </Badge>
-            )}
-            {needsPush && !task.isBoss && (
-              <button type="button" onClick={() => onOpen(task)} className="rounded-full">
-                <Badge variant="butter" className="cursor-pointer hover:brightness-95">
-                  <Zap /> Hard to start? Break it down
-                </Badge>
-              </button>
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                <Repeat size={12} /> {REPEAT_LABEL[task.recurrenceRule]}
+              </span>
             )}
             {subtasks.length > 0 && (
               <button
@@ -177,27 +144,22 @@ export function TaskItem({
                 aria-expanded={expanded}
                 className="inline-flex h-6 items-center gap-1 rounded-full bg-secondary px-2.5 text-xs font-medium text-secondary-foreground transition-colors hover:bg-accent"
               >
-                {doneSteps}/{subtasks.length} steps
+                {doneSteps === subtasks.length ? "Steps done" : "Steps"}
                 <ChevronDown size={12} className={cn("transition-transform", expanded && "rotate-180")} />
               </button>
             )}
           </div>
 
-          {boss && boss.total > 0 && (
-            <div className="mt-2.5 h-1.5 w-full max-w-60 overflow-hidden rounded-full bg-muted" title={`Boss HP ${boss.hp}`}>
-              <div className="h-full rounded-full bg-destructive transition-[width] duration-700" style={{ width: `${boss.hp}%` }} />
-            </div>
-          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-0.5">
-          {!optimisticDone && (
+          {!optimisticDone && !isReminder && (
             <Link
-              href={`/focus/${task.id}`}
-              aria-label={`Start "${task.title}"`}
-              className="grid size-9 place-items-center rounded-full text-muted-foreground transition-all hover:bg-brand-soft hover:text-brand sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+              href={`/today?focus=${task.id}`}
+              aria-label={`Focus on "${task.title}"`}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-muted-foreground transition-all hover:bg-brand-soft hover:text-brand"
             >
-              <Play size={16} />
+              <Target size={15} /> <span className="hidden sm:inline">Focus on this</span>
             </Link>
           )}
           <DropdownMenu>
@@ -210,6 +172,11 @@ export function TaskItem({
             />
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={() => onOpen(task)}>Edit details</DropdownMenuItem>
+              {startWaiting && !optimisticDone && canWaitFor(task, now) && (
+                <DropdownMenuItem onClick={() => startWaiting(task)}>
+                  <Hourglass /> Waiting mode
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => startTransition(() => snoozeTaskAction(task.id, 60))}>
                 Snooze for an hour
               </DropdownMenuItem>

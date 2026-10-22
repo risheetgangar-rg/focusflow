@@ -1,4 +1,5 @@
 import { Check, Sparkles } from "lucide-react";
+import PatternWaves from "@/components/effects/PatternWaves";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Mascot } from "@/components/marketing/mascot";
@@ -63,13 +64,23 @@ function PanelFrame({
       <div className="sticky top-3 h-[calc(100dvh-1.5rem)]">
         <div
           className={cn(
-            "bg-grain relative flex h-full flex-col justify-between overflow-hidden rounded-[2rem] p-10 xl:p-14",
-            tint,
+            "relative isolate flex h-full flex-col justify-between overflow-hidden rounded-[2rem] bg-brand-gradient p-10 text-white xl:p-14",
           )}
         >
-          <Rings className={cn("top-[42%] left-1/2 -translate-x-1/2 -translate-y-1/2", ringsClassName)} />
-          <p className="relative text-xs font-medium tracking-[0.14em] text-foreground/65 uppercase">{eyebrow}</p>
-          <div className="relative flex flex-1 items-center justify-center py-8">{children}</div>
+          {/* Whitish dot waves drifting across the indigo; the cursor ripples them. */}
+          <PatternWaves
+            className="absolute! inset-0 -z-10"
+            preset="silk"
+            color="#eef2ff"
+            backgroundColor="transparent"
+            opacity={0.55}
+            fade="edges"
+            interactive
+            cursorSize={60}
+            cursorStrength={0.6}
+          />
+          <p className="relative text-xs font-medium tracking-[0.14em] text-white/70 uppercase">{eyebrow}</p>
+          <div className="relative flex flex-1 items-center justify-center py-8 text-foreground">{children}</div>
           <div className="relative">{quote}</div>
         </div>
       </div>

@@ -25,7 +25,7 @@ function Rings() {
 export function CtaBand() {
   return (
     <section className="px-3 pb-4 sm:px-6 sm:pb-6">
-      <div className="bg-grain relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-primary px-7 py-20 text-primary-foreground sm:px-16 sm:py-28">
+      <div className="bg-grain relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-brand-gradient px-7 py-20 text-primary-foreground sm:px-16 sm:py-28">
         <Rings />
 
         <div className="relative max-w-2xl">

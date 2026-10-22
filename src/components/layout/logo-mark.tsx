@@ -1,22 +1,36 @@
 import { cn } from "@/lib/utils";
 
-/** The Unstuck mark: concentric rings (focus) inside a soft square. */
+/** App icon: a deep indigo square with a glowing yellow "U" (from the Unstuck logo). */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" aria-hidden className={cn("size-8", className)}>
-      <rect width="32" height="32" rx="9" fill="var(--primary)" />
-      <circle cx="16" cy="16" r="8.5" fill="none" stroke="var(--primary-foreground)" strokeWidth="2" opacity="0.95" />
-      <circle cx="16" cy="16" r="4.4" fill="none" stroke="var(--primary-foreground)" strokeWidth="2" opacity="0.95" />
-      <circle cx="16" cy="16" r="1.4" fill="var(--primary-foreground)" />
-    </svg>
+    <span
+      aria-hidden
+      className={cn(
+        "inline-grid size-9 shrink-0 place-items-center rounded-[26%] bg-indigo font-display text-lg leading-none text-sunny shadow-[inset_0_0_0_1px_rgb(255_255_255/0.12)]",
+        className,
+      )}
+    >
+      <span className="[text-shadow:0_0_12px_rgb(255_224_102/0.55)]">U</span>
+    </span>
   );
 }
 
-export function Wordmark({ className }: { className?: string }) {
+/**
+ * The Unstuck wordmark: a solid, glowing "UN" and an outlined "STUCK" in yellow.
+ * It's made for the indigo header; on a white background pass `onLight` and it
+ * sits on its own indigo chip, like the logo artwork.
+ */
+export function Wordmark({ className, onLight = false }: { className?: string; onLight?: boolean }) {
   return (
-    <span className={cn("flex items-center gap-2.5", className)}>
-      <LogoMark />
-      <span className="font-display text-[1.65rem] leading-none">Unstuck</span>
+    <span
+      className={cn(
+        "inline-flex items-baseline text-[1.75rem] leading-none tracking-[0.02em] text-sunny",
+        onLight && "rounded-xl bg-indigo px-3 py-2",
+        className,
+      )}
+    >
+      <span className="font-display [text-shadow:0_0_14px_rgb(255_224_102/0.6)]">UN</span>
+      <span className="font-outline">STUCK</span>
     </span>
   );
 }

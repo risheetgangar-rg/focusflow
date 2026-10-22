@@ -1,16 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { MotionProvider } from "@/components/motion/motion-provider";
 import { ServiceWorkerRegistration } from "@/components/layout/service-worker-registration";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
-const displaySerif = Instrument_Serif({
-  variable: "--font-display-serif",
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
+// Horizon is very wide, so it is scaled down to sit comfortably at heading sizes.
+const horizon = localFont({
+  src: "./fonts/Horizon-Regular.otf",
+  variable: "--font-horizon",
+  display: "swap",
+  declarations: [{ prop: "size-adjust", value: "74%" }],
+});
+const horizonOutline = localFont({
+  src: "./fonts/Horizon-Outlined.otf",
+  variable: "--font-horizon-outline",
+  display: "swap",
+  declarations: [{ prop: "size-adjust", value: "74%" }],
 });
 
 export const metadata: Metadata = {
@@ -27,7 +34,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#faf9f6",
+  themeColor: "#1a00a8",
   width: "device-width",
   initialScale: 1,
 };
@@ -45,7 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${displaySerif.variable} h-full`}
+      className={`${geistMono.variable} ${horizon.variable} ${horizonOutline.variable} h-full`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />

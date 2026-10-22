@@ -9,14 +9,13 @@ import { Rise } from "./rise";
  */
 export function Hero() {
   return (
-    <section className="relative isolate overflow-hidden bg-muted/60 pt-12 sm:pt-20">
+    <section className="relative isolate overflow-hidden bg-brand-gradient pt-12 text-white sm:pt-20">
       {/* Flowing ink lines behind the headline; the cursor curls them, a click swirls them. */}
       <FluxLines
         className="pointer-events-none absolute! inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black_55%,transparent_85%)]"
-        colors={["#111111", "#f5c518", "#111111"]}
-        lightMode
-        glow={2.2}
-        opacity={0.85}
+        colors={["#ffffff", "#e6f05a", "#ffffff"]}
+        glow={1.6}
+        opacity={0.55}
         rimWidth={0.2}
         lineWidth={1}
         flowDirection="down"
@@ -25,21 +24,24 @@ export function Hero() {
       />
       <div className="mx-auto w-full max-w-[88rem] px-5 text-center sm:px-8">
         <Rise>
-          <p className="inline-flex items-center gap-2.5 rounded-full border border-foreground/10 bg-background/70 px-4 py-1.5 text-xs font-semibold tracking-[0.2em] text-foreground/70 uppercase backdrop-blur">
-            <span className="size-2 animate-breathe rounded-full bg-[#f5c518]" />
+          <p className="inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-[0.2em] text-white/85 uppercase backdrop-blur">
+            <span className="size-2 animate-breathe rounded-full bg-lime" />
             Built for brains that start late
           </p>
         </Rise>
 
         <Rise delay={0.08}>
-          <h1 className="mx-auto mt-8 max-w-6xl text-[clamp(3.2rem,10.5vw,8.5rem)] leading-[0.86] font-black tracking-[-0.055em] uppercase">
-            <span className="block">Get unstuck.</span>
-            <span className="block text-foreground/35">One step at a time.</span>
+          <h1 className="mx-auto mt-8 max-w-6xl font-display text-[clamp(3rem,10vw,8.5rem)] leading-[0.95] uppercase">
+            <span className="block">
+              Get <span className="text-sunny [text-shadow:0_0_40px_rgb(255_224_102/0.45)]">un</span>
+              <span className="font-outline text-sunny">stuck.</span>
+            </span>
+            <span className="mt-2 block font-outline text-[0.55em] text-white/80">One step at a time.</span>
           </h1>
         </Rise>
 
         <Rise delay={0.16}>
-          <p className="mx-auto mt-8 max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
+          <p className="mx-auto mt-8 max-w-xl text-lg leading-relaxed text-white/80 sm:text-xl">
             Unstuck shows one task at a time. And when you fall off, it brings you back with one tiny win, not a wall of
             old tasks.
           </p>

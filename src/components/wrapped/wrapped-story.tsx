@@ -61,7 +61,7 @@ async function makeShareImage(stats: WrappedStats, range: string): Promise<Blob 
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
   await document.fonts.ready;
-  const display = css.getPropertyValue("--font-display-serif").trim() || "serif";
+  const display = css.getPropertyValue("--font-horizon").trim() || "serif";
   const sans = css.getPropertyValue("--font-geist-sans").trim() || "sans-serif";
 
   ctx.fillStyle = color("--primary");

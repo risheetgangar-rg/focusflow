@@ -40,7 +40,7 @@ export function MobileTopBar({
   ].filter((i) => !(i.gameOnly && mode === "off"));
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/85 px-5 py-3 backdrop-blur-xl lg:hidden">
+    <header className="sticky top-0 z-30 flex items-center justify-between bg-brand-gradient px-5 py-3 text-white lg:hidden">
       <Link href="/today" aria-label="Unstuck home">
         <Wordmark />
       </Link>

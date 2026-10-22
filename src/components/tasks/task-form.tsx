@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ChevronDown, Swords } from "lucide-react";
+import { ChevronDown, Lock, Star, Swords } from "lucide-react";
 import { saveTask, type TaskFormState } from "@/app/(dashboard)/tasks/actions";
 import { useCelebration } from "@/components/gamification/celebration-provider";
 import { useApp } from "@/components/providers/app-context";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { PillGroup } from "@/components/ui/pill-group";
 import { Textarea } from "@/components/ui/textarea";
 import { zonedDateString, zonedTimeString } from "@/lib/dates/tz";
+import { TASK_TYPES } from "@/lib/tasks/personal";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/types/task";
 
@@ -161,6 +162,28 @@ export function TaskForm({
             aria-label="Minutes (custom)"
           />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>What kind of task?</Label>
+        <PillGroup
+          name="taskType"
+          ariaLabel="Kind of task"
+          defaultValue={task?.taskType ?? "other"}
+          options={TASK_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+          optionClassName="h-9 px-3.5 text-sm"
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <label className="flex h-10 cursor-pointer items-center gap-2 rounded-full border border-input bg-card px-4 text-sm font-medium has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+          <input type="checkbox" name="mustDo" defaultChecked={task?.mustDo} className="sr-only" />
+          <Star size={15} /> Must do
+        </label>
+        <label className="flex h-10 cursor-pointer items-center gap-2 rounded-full border border-input bg-card px-4 text-sm font-medium has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+          <input type="checkbox" name="fixedDate" defaultChecked={task?.fixedDate} className="sr-only" />
+          <Lock size={15} /> Fixed date (never moves)
+        </label>
       </div>
 
       <button

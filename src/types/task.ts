@@ -2,6 +2,7 @@ export type TaskStatus = "pending" | "completed" | "cancelled";
 export type TaskPriority = "low" | "medium" | "high" | "critical";
 export type TaskSource = "manual" | "brain_dump" | "voice" | "recurring";
 export type RecurrenceRule = "daily" | "weekly" | "monthly";
+export type TaskType = "bills" | "work" | "calls" | "home" | "health" | "other";
 
 export interface Task {
   id: string;
@@ -23,6 +24,11 @@ export interface Task {
   startedAt: string | null;
   postponedCount: number;
   isBoss: boolean;
+  /** Appointments and other fixed things: never moved when the plan shifts forward. */
+  fixedDate: boolean;
+  /** The "Must do" star. */
+  mustDo: boolean;
+  taskType: TaskType;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,6 +56,9 @@ export interface TaskInput {
   scheduledAt?: string | null;
   recurrenceRule?: RecurrenceRule | null;
   isBoss?: boolean;
+  fixedDate?: boolean;
+  mustDo?: boolean;
+  taskType?: TaskType;
   /** For a recurring series: the occurrence this one was generated from. */
   parentTaskId?: string | null;
 }

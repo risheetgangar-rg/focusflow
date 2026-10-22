@@ -1,44 +1,22 @@
 import type { Metadata } from "next";
-import { BrainDumpForm } from "@/components/brain-dump/brain-dump-form";
-import { MAX_CHARS } from "@/components/brain-dump/brain-dump-items";
-import { requireSession } from "@/lib/auth/session";
-import { listNotes } from "@/repositories/welcome-repository";
+import Link from "next/link";
+import { Brain } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 
 export const metadata: Metadata = { title: "Brain dump" };
 
-export default async function BrainDumpPage({ searchParams }: { searchParams: Promise<{ text?: string | string[] }> }) {
-  const { text } = await searchParams;
-  // Quick capture hands over whatever was typed when it found several tasks in one line.
-  const prefill = typeof text === "string" ? text.slice(0, MAX_CHARS) : "";
-  const { supabase, userId } = await requireSession();
-  const notes = await listNotes(supabase, userId, 12).catch(() => []);
-
+/** Brain dump is paused for now (build plan step 4): no AI is called from here. */
+export default function BrainDumpPage() {
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      <header className="animate-rise mb-8 sm:mb-10">
-        <p className="text-eyebrow text-muted-foreground">Get it out of your head</p>
-        <h1 className="mt-2 font-display text-5xl leading-none sm:text-7xl">Brain dump</h1>
-        <p className="mt-4 max-w-xl text-muted-foreground">
-          Write it however it comes out. I&apos;ll split it into tasks, pick up the dates, and let you check everything before it&apos;s saved.
-        </p>
-      </header>
-      {/* Keyed so a new hand-off from quick capture starts a fresh form. */}
-      <BrainDumpForm key={prefill} defaultText={prefill} />
-
-      {notes.length > 0 && (
-        <section aria-labelledby="notes" className="mt-14 space-y-4">
-          <h2 id="notes" className="font-display text-3xl">
-            Your notes
-          </h2>
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {notes.map((note) => (
-              <li key={note.id} className="rounded-2xl border border-border bg-card px-4 py-3 text-sm shadow-soft">
-                {note.body}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+    <div className="mx-auto w-full max-w-xl pt-10 text-center">
+      <span className="mx-auto grid size-14 place-items-center rounded-full bg-muted text-muted-foreground">
+        <Brain size={24} />
+      </span>
+      <h1 className="mt-5 font-display text-5xl">Brain dump</h1>
+      <p className="mt-3 text-muted-foreground">Coming soon. For now, add tasks one at a time from Today.</p>
+      <Link href="/today" className={`${buttonVariants({ variant: "outline", size: "lg" })} mt-6`}>
+        Back to Today
+      </Link>
     </div>
   );
 }

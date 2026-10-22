@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bell, Gamepad2, Palette, ShieldCheck, User } from "lucide-react";
+import { Bell, Palette, ShieldCheck, User } from "lucide-react";
 import { NotificationSettings } from "@/components/notifications/notification-settings";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/primitives";
 import { requireSession } from "@/lib/auth/session";
@@ -7,7 +7,6 @@ import { levelProgress } from "@/lib/gamification/rules";
 import { getState } from "@/repositories/gamification-repository";
 import { getPreferences } from "@/repositories/reminder-repository";
 import { AccountSection } from "./account-section";
-import { GameLayerPicker } from "./game-layer-picker";
 import { ProfileForm } from "./profile-form";
 import { SettingsSection } from "./settings-section";
 import { ThemePicker } from "./theme-picker";
@@ -36,7 +35,7 @@ export default async function SettingsPage() {
             Make it <span className="italic">yours</span>.
           </h1>
           <p className="max-w-xl text-muted-foreground">
-            Your name, your look, and how much game you want. All of it changes any time.
+            Your name, your look, and your reminders. All of it changes any time.
           </p>
         </header>
       </Reveal>
@@ -74,17 +73,6 @@ export default async function SettingsPage() {
           </SettingsSection>
         </StaggerItem>
 
-        <StaggerItem>
-          <SettingsSection
-            id="game-layer"
-            icon={Gamepad2}
-            tint="bg-tint-butter"
-            title="Game layer"
-            description="How much game do you want? Switch any time. Nothing you've done is ever lost."
-          >
-            <GameLayerPicker current={profile.gamificationMode} />
-          </SettingsSection>
-        </StaggerItem>
 
         <StaggerItem>
           <SettingsSection

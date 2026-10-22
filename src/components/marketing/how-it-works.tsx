@@ -13,8 +13,8 @@ interface Step {
 
 const STEPS: Step[] = [
   {
-    title: "Brain dump",
-    body: "Type it, paste it, or say it out loud. Messy is fine. Unstuck pulls out the tasks and the dates for you.",
+    title: "Add it",
+    body: "Type the task and tap Today, Tomorrow, This week or Someday. Star the ones you must do.",
     icon: PenLine,
     tint: "bg-tint-lavender",
   },
@@ -25,8 +25,8 @@ const STEPS: Step[] = [
     tint: "bg-tint-peach",
   },
   {
-    title: "Focus",
-    body: "Break it into tiny steps, start a calm timer, and just do the first one.",
+    title: "Lock in",
+    body: "See the first tiny step, start a calm timer, and just do that one thing.",
     icon: Timer,
     tint: "bg-tint-sky",
   },

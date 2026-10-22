@@ -8,8 +8,8 @@ export function GuestBanner() {
       <p className="flex items-start gap-2">
         <Sparkles size={16} className="mt-0.5 shrink-0" />
         <span>
-          You&apos;re trying Unstuck as a guest, with a sample list to play with. To see the comeback screen, scroll to the
-          bottom of Today and tap <strong>&ldquo;pretend I was away 4 days&rdquo;</strong>.
+          You&apos;re trying Unstuck as a guest, with sample tasks to play with. To see the comeback screen again, use the
+          &ldquo;pretend I was away&rdquo; button at the bottom of Today.
         </span>
       </p>
       <Link href="/settings" className="shrink-0 font-medium underline underline-offset-4 hover:text-brand">

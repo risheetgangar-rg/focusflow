@@ -42,13 +42,14 @@ export function CtaBand() {
           <Reveal inView delay={0.18}>
             <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
               <Link
-                href="/signup"
+                href="/try"
+                prefetch={false}
                 className={cn(
                   buttonVariants({ size: "xl" }),
                   "bg-primary-foreground text-primary hover:bg-primary-foreground/90",
                 )}
               >
-                Start free
+                Try the comeback
                 <ArrowRight aria-hidden />
               </Link>
               <Link

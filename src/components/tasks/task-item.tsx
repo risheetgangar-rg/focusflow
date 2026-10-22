@@ -3,7 +3,7 @@
 import { useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { AnimatePresence, m } from "motion/react";
-import { CalendarClock, ChevronDown, Clock, MoreHorizontal, Moon, Play, Repeat, Siren, Swords, Zap } from "lucide-react";
+import { CalendarClock, ChevronDown, Clock, Lock, MoreHorizontal, Moon, Repeat, Star, Swords, Target, Zap } from "lucide-react";
 import {
   cancelTaskAction,
   completeTaskAction,
@@ -31,9 +31,11 @@ import { cn } from "@/lib/utils";
 import { isWaiting } from "@/services/recommendation-service";
 import { announceTaskDone } from "@/components/today/today-progress";
 import { StepsEditor } from "./steps-editor";
+import { URGENCY_STYLE, UrgencyChip, useUrgency } from "./urgency-chip";
 import type { Subtask, Task } from "@/types/task";
 
-const DUE_VARIANT = { past: "butter", today: "brand", soon: "lavender", later: "secondary" } as const;
+// Past dates are calm and neutral, never alarming.
+const DUE_VARIANT = { past: "secondary", today: "secondary", soon: "secondary", later: "secondary" } as const;
 
 export function TaskItem({
   task,
@@ -55,8 +57,8 @@ export function TaskItem({
 
   const now = new Date(nowIso);
   const due = task.dueAt ? describeDue(task.dueAt, now, timezone) : null;
-  // High-priority work is shown like an emergency: red edge, red label, pulled to the top of lists.
-  const urgent = (task.priority === "high" || task.priority === "critical") && !optimisticDone;
+  // Urgency comes from the deadline (and the Must do star), never set by hand.
+  const urgency = useUrgency(task, nowIso);
   // Snoozed, or planned for later than its due date: say when it's coming back.
   const plan = task.scheduledAt && task.scheduledAt !== task.dueAt && isWaiting(task, now) ? describeDue(task.scheduledAt, now, timezone) : null;
   const planLabel = plan ? (plan.tone === "today" ? `Back at ${plan.label.split(" · ")[1] ?? "later"}` : `Planned ${plan.label}`) : null;
@@ -105,8 +107,8 @@ export function TaskItem({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-border bg-card px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:shadow-soft",
-        urgent && "border-destructive/45 bg-destructive/[0.06] pl-5 shadow-[0_8px_24px_-14px_var(--destructive)] before:absolute before:inset-y-0 before:left-0 before:w-1.5 before:bg-destructive",
+        "group relative overflow-hidden rounded-2xl border border-l-4 border-border bg-card px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:shadow-soft",
+        !optimisticDone && URGENCY_STYLE[urgency].edge,
         optimisticDone && "opacity-60",
       )}
     >
@@ -146,13 +148,18 @@ export function TaskItem({
                 <Clock /> {task.estimatedMinutes} min
               </Badge>
             )}
-            {urgent && (
-              <Badge variant="destructive" className="bg-destructive font-semibold text-white">
-                <Siren /> Urgent
+            {!optimisticDone && <UrgencyChip urgency={urgency} />}
+            {task.mustDo && (
+              <Badge variant="secondary">
+                <Star /> Must do
               </Badge>
             )}
-            {task.priority === "medium" && <Badge variant="sky">Medium</Badge>}
-            {task.priority === "low" && <Badge variant="mint">Low</Badge>}
+            {task.fixedDate && (
+              <Badge variant="outline">
+                <Lock /> Fixed date
+              </Badge>
+            )}
+            {task.description?.startsWith("Sample task") && <Badge variant="outline">Sample</Badge>}
             {task.isBoss && (
               <Badge variant="rose">
                 <Swords /> Boss
@@ -177,7 +184,7 @@ export function TaskItem({
                 aria-expanded={expanded}
                 className="inline-flex h-6 items-center gap-1 rounded-full bg-secondary px-2.5 text-xs font-medium text-secondary-foreground transition-colors hover:bg-accent"
               >
-                {doneSteps}/{subtasks.length} steps
+                {doneSteps === subtasks.length ? "Steps done" : "Steps"}
                 <ChevronDown size={12} className={cn("transition-transform", expanded && "rotate-180")} />
               </button>
             )}
@@ -193,11 +200,11 @@ export function TaskItem({
         <div className="flex shrink-0 items-center gap-0.5">
           {!optimisticDone && (
             <Link
-              href={`/focus/${task.id}`}
-              aria-label={`Start "${task.title}"`}
-              className="grid size-9 place-items-center rounded-full text-muted-foreground transition-all hover:bg-brand-soft hover:text-brand sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+              href={`/today?focus=${task.id}`}
+              aria-label={`Focus on "${task.title}"`}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-muted-foreground transition-all hover:bg-brand-soft hover:text-brand"
             >
-              <Play size={16} />
+              <Target size={15} /> <span className="hidden sm:inline">Focus on this</span>
             </Link>
           )}
           <DropdownMenu>

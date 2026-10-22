@@ -14,6 +14,18 @@ import type { GamificationMode } from "@/types/user";
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   const Icon = item.icon;
+  if (item.comingSoon) {
+    return (
+      <span
+        aria-disabled="true"
+        className="flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-foreground/35"
+      >
+        <Icon size={18} />
+        {item.label}
+        <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[0.65rem] text-muted-foreground">Coming soon</span>
+      </span>
+    );
+  }
   return (
     <Link
       href={item.href}

@@ -2,9 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Brain, ListPlus, Mic, Repeat } from "lucide-react";
 import { HabitDialog } from "@/components/habits/habit-dialog";
-import { QuickCapture } from "@/components/tasks/quick-capture";
+import { AddTaskBox } from "@/components/today/add-task-box";
 import { TaskEditorDialog } from "@/components/tasks/task-editor-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -50,7 +49,7 @@ export function QuickAddProvider({ children }: { children: React.ReactNode }) {
     setHabitOpen(true);
   }, []);
 
-  // Keyboard shortcuts: N new task, B brain dump, "/" or C quick capture. Ignored while typing.
+  // Keyboard shortcuts: N new task, "/" or C quick add. Ignored while typing.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target)) return;
@@ -59,9 +58,6 @@ export function QuickAddProvider({ children }: { children: React.ReactNode }) {
       if (key === "n") {
         event.preventDefault();
         openTask();
-      } else if (key === "b") {
-        event.preventDefault();
-        router.push("/brain-dump");
       } else if (key === "/" || key === "c") {
         event.preventDefault();
         openCapture();
@@ -73,17 +69,7 @@ export function QuickAddProvider({ children }: { children: React.ReactNode }) {
 
   const api = useMemo(() => ({ openCapture, openTask, openHabit }), [openCapture, openTask, openHabit]);
 
-  const go = (href: string) => {
-    setCaptureOpen(false);
-    router.push(href);
-  };
 
-  const tiles = [
-    { icon: ListPlus, tint: "bg-tint-lavender", title: "New task", hint: "Dates, notes, steps", kbd: "N", onClick: () => openTask() },
-    { icon: Repeat, tint: "bg-tint-mint", title: "New habit", hint: "Something to keep up", kbd: undefined, onClick: openHabit },
-    { icon: Brain, tint: "bg-tint-peach", title: "Brain dump", hint: "Several things at once", kbd: "B", onClick: () => go("/brain-dump") },
-    { icon: Mic, tint: "bg-tint-sky", title: "Voice", hint: "Say it out loud", kbd: undefined, onClick: () => go("/voice") },
-  ];
 
   return (
     <QuickAddContext.Provider value={api}>
@@ -93,36 +79,17 @@ export function QuickAddProvider({ children }: { children: React.ReactNode }) {
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Add something</DialogTitle>
-            <DialogDescription>Get it out of your head. We&apos;ll keep it safe.</DialogDescription>
+            <DialogDescription>Type it, then pick when. We&apos;ll keep it safe.</DialogDescription>
           </DialogHeader>
 
-          <QuickCapture autoFocus onDone={() => setCaptureOpen(false)} />
-
-          <div className="grid grid-cols-2 gap-3">
-            {tiles.map(({ icon: Icon, tint, title, hint, kbd, onClick }) => (
-              <button
-                key={title}
-                type="button"
-                onClick={onClick}
-                className="group flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-foreground/25 hover:shadow-soft"
-              >
-                <span className={`grid size-10 place-items-center rounded-full ${tint}`}>
-                  <Icon size={18} />
-                </span>
-                <span>
-                  <span className="flex items-center gap-2 text-sm font-semibold">
-                    {title}
-                    {kbd && (
-                      <kbd className="rounded-md border border-border bg-muted px-1.5 py-0.5 font-mono text-[0.65rem] text-muted-foreground">
-                        {kbd}
-                      </kbd>
-                    )}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{hint}</span>
-                </span>
-              </button>
-            ))}
-          </div>
+          <AddTaskBox />
+          <button
+            type="button"
+            onClick={() => openTask()}
+            className="text-left text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Add more details instead (type, steps, fixed date)
+          </button>
         </DialogContent>
       </Dialog>
 

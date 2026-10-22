@@ -40,8 +40,8 @@ export function Hero() {
 
         <Rise delay={0.16}>
           <p className="mx-auto mt-8 max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-            Dump everything out of your head. Unstuck shows you the one thing to do next, then makes starting it feel
-            easy.
+            Unstuck shows one task at a time. And when you fall off, it brings you back with one tiny win, not a wall of
+            old tasks.
           </p>
         </Rise>
 

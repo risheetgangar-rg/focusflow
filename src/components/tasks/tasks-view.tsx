@@ -119,7 +119,6 @@ export function TasksView({
             <h2 id={`bucket-${bucket}`} className="font-display text-3xl">
               {BUCKET_LABELS[bucket]}
             </h2>
-            <span className="text-sm text-muted-foreground tabular-nums">{grouped[bucket].length}</span>
           </div>
           <TaskList tasks={grouped[bucket]} subtasksByTask={subtasksByTask} nowIso={nowIso} />
         </section>

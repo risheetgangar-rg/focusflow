@@ -114,8 +114,8 @@ function HabitCard() {
 function XpCard() {
   return (
     <div className="flex h-full flex-col items-start justify-end bg-[linear-gradient(200deg,#e9eaee,#a9abb2)] p-[9%] text-[#0b0b0c]">
-      <span className="text-[calc(var(--card-w)*0.3)] leading-[0.85] font-black tracking-[-0.06em]">+120</span>
-      <span className="mt-[4%] text-[calc(var(--card-w)*0.07)] font-semibold tracking-[0.3em]">XP · NICE WORK</span>
+      <span className="text-[calc(var(--card-w)*0.2)] leading-[0.9] font-black tracking-[-0.06em]">One off the pile!!</span>
+      <span className="mt-[4%] text-[calc(var(--card-w)*0.07)] font-semibold tracking-[0.3em]">LET&apos;S GO</span>
     </div>
   );
 }

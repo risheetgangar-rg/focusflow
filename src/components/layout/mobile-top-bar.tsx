@@ -35,7 +35,7 @@ export function MobileTopBar({
   const name = displayName || (isGuest ? "Guest" : (email?.split("@")[0] ?? "You"));
   const level = levelProgress(xp).level;
   const extras = [
-    ...NAV_GROUPS.flatMap((g) => g.items).filter((i) => !["/today", "/tasks", "/habits", "/review"].includes(i.href)),
+    ...NAV_GROUPS.flatMap((g) => g.items).filter((i) => !["/today", "/tasks", "/review"].includes(i.href) && !i.comingSoon),
     SETTINGS_ITEM,
   ].filter((i) => !(i.gameOnly && mode === "off"));
 

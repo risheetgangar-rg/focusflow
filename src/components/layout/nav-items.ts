@@ -1,16 +1,4 @@
-import {
-  Brain,
-  CalendarCheck,
-  LifeBuoy,
-  ListChecks,
-  Mic,
-  Repeat2,
-  Settings,
-  Sun,
-  Target,
-  Trophy,
-  type LucideIcon,
-} from "lucide-react";
+import { Brain, ListChecks, Settings, Sparkles, Sun, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -18,6 +6,8 @@ export interface NavItem {
   icon: LucideIcon;
   /** Hidden when the game layer is off. */
   gameOnly?: boolean;
+  /** Shown greyed out with "Coming soon", and can't be opened. */
+  comingSoon?: boolean;
 }
 
 export interface NavGroup {
@@ -25,30 +15,25 @@ export interface NavGroup {
   items: NavItem[];
 }
 
+/*
+ * Kept deliberately short so nothing feels like a dashboard. Focus now lives
+ * inside Today; Habits, Voice, Rescue and Rewards are hidden (not deleted).
+ */
 export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Your day",
     items: [
       { href: "/today", label: "Today", icon: Sun },
       { href: "/tasks", label: "Tasks", icon: ListChecks },
-      { href: "/habits", label: "Habits", icon: Repeat2 },
-      { href: "/focus", label: "Focus", icon: Target },
     ],
+  },
+  {
+    title: "Look back",
+    items: [{ href: "/review", label: "Your Wrapped", icon: Sparkles }],
   },
   {
     title: "Capture",
-    items: [
-      { href: "/brain-dump", label: "Brain dump", icon: Brain },
-      { href: "/voice", label: "Voice", icon: Mic },
-    ],
-  },
-  {
-    title: "Reflect",
-    items: [
-      { href: "/review", label: "Review", icon: CalendarCheck },
-      { href: "/rescue", label: "Rescue", icon: LifeBuoy },
-      { href: "/rewards", label: "Rewards", icon: Trophy, gameOnly: true },
-    ],
+    items: [{ href: "/brain-dump", label: "Brain dump", icon: Brain, comingSoon: true }],
   },
 ];
 

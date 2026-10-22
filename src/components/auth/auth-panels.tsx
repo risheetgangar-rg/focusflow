@@ -101,7 +101,7 @@ function LoginPanel() {
         <Mascot stage={2} mood="happy" size={128} className="absolute -top-16 -right-14" />
         <Chip className="absolute -bottom-5 -left-10">
           <Sparkles aria-hidden className="size-4 text-brand" />
-          +25 XP
+          One off the pile!!
         </Chip>
       </div>
     </PanelFrame>

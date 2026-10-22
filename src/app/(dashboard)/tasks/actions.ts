@@ -66,6 +66,9 @@ export async function saveTask(
       : null,
     recurrenceRule: v.recurrenceRule === "none" ? null : (v.recurrenceRule as RecurrenceRule),
     isBoss: session.profile.gamificationMode === "full" ? v.isBoss : false,
+    taskType: v.taskType,
+    mustDo: v.mustDo,
+    fixedDate: v.fixedDate,
   };
 
   if (taskId) {

@@ -81,7 +81,8 @@ function shift(iso: string | null, days: number, floor: Date): string | null {
  */
 export function planMoveForward(tasks: Task[], days: number, now: Date): DateChange[] {
   const floor = now;
-  return waitingTasks(tasks, now).map((t) => ({
+  // Fixed-date things (appointments) never move.
+  return waitingTasks(tasks, now).filter((t) => !t.fixedDate).map((t) => ({
     taskId: t.id,
     title: t.title,
     oldDueAt: t.dueAt,

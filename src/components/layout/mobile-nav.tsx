@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus, Repeat2, ListChecks, Sun, CalendarCheck } from "lucide-react";
+import { ListChecks, Plus, Settings, Sparkles, Sun } from "lucide-react";
 import { isActivePath } from "@/components/layout/nav-items";
 import { useQuickAdd } from "@/components/layout/quick-add-provider";
 import { cn } from "@/lib/utils";
@@ -12,8 +12,8 @@ const LEFT = [
   { href: "/tasks", label: "Tasks", icon: ListChecks },
 ];
 const RIGHT = [
-  { href: "/habits", label: "Habits", icon: Repeat2 },
-  { href: "/review", label: "Review", icon: CalendarCheck },
+  { href: "/review", label: "Wrapped", icon: Sparkles },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 function Tab({ href, label, icon: Icon, active }: { href: string; label: string; icon: typeof Sun; active: boolean }) {

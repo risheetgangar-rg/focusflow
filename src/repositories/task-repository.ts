@@ -21,6 +21,9 @@ interface TaskRow {
   started_at: string | null;
   postponed_count: number;
   is_boss: boolean;
+  fixed_date: boolean;
+  must_do: boolean;
+  task_type: string;
   created_at: string;
   updated_at: string;
 }
@@ -59,6 +62,9 @@ function toTask(row: TaskRow): Task {
     startedAt: row.started_at,
     postponedCount: row.postponed_count,
     isBoss: row.is_boss,
+    fixedDate: row.fixed_date ?? false,
+    mustDo: row.must_do ?? false,
+    taskType: (row.task_type ?? "other") as Task["taskType"],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -91,6 +97,9 @@ function toRow(input: Partial<TaskInput>) {
     ...(input.recurrenceRule !== undefined && { recurrence_rule: input.recurrenceRule }),
     ...(input.isBoss !== undefined && { is_boss: input.isBoss }),
     ...(input.parentTaskId !== undefined && { parent_task_id: input.parentTaskId }),
+    ...(input.fixedDate !== undefined && { fixed_date: input.fixedDate }),
+    ...(input.mustDo !== undefined && { must_do: input.mustDo }),
+    ...(input.taskType !== undefined && { task_type: input.taskType }),
   };
 }
 

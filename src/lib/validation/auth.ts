@@ -35,7 +35,7 @@ export const themeSchema = z.enum(THEMES.map((t) => t.id) as [string, ...string[
 
 export const onboardingSchema = z.object({
   displayName: z.string().trim().max(80).optional().or(z.literal("")),
-  focusAreas: z.array(z.enum(["remembering", "starting", "focus", "habits", "all"])).max(5),
+  focusAreas: z.array(z.enum(["bills", "work", "calls", "home", "health", "remembering", "starting", "focus", "habits", "all"])).max(5),
   gamificationMode: gamificationModeSchema,
   timezone: z.string().refine(isValidTimezone).optional(),
 });

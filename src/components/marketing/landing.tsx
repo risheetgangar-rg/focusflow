@@ -1,4 +1,5 @@
 import { CtaBand } from "./cta-band";
+import { Faq, PileLine } from "./faq";
 import { FeatureBento } from "./feature-bento";
 import { Hero } from "./hero";
 import { HowItWorks } from "./how-it-works";
@@ -13,9 +14,11 @@ export function Landing() {
       <SiteNav />
       <main id="main" className="flex-1">
         <Hero />
+        <PileLine />
         <HowItWorks />
         <FeatureBento />
         <Principles />
+        <Faq />
         <CtaBand />
       </main>
       <SiteFooter />

@@ -7,8 +7,8 @@ const PRINCIPLES = [
     body: "Your list can be long. Your screen doesn’t have to be.",
   },
   {
-    title: "Rewards, not penalties",
-    body: "XP and levels only ever go up. No lost streaks, and no scoreboard of what didn’t get done.",
+    title: "Nothing counts what you missed",
+    body: "No scores, no chains to break, and no number of things left undone. Ever.",
   },
   {
     title: "Gentle by design",

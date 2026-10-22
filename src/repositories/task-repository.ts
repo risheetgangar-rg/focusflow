@@ -24,6 +24,7 @@ interface TaskRow {
   fixed_date: boolean;
   must_do: boolean;
   task_type: string;
+  felt?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -65,6 +66,7 @@ function toTask(row: TaskRow): Task {
     fixedDate: row.fixed_date ?? false,
     mustDo: row.must_do ?? false,
     taskType: (row.task_type ?? "other") as Task["taskType"],
+    felt: (row.felt ?? null) as Task["felt"],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

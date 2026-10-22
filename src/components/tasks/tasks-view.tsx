@@ -5,6 +5,7 @@ import { ChevronDown, Search } from "lucide-react";
 import { useQuickAdd } from "@/components/layout/quick-add-provider";
 import { useApp } from "@/components/providers/app-context";
 import { TaskList } from "@/components/tasks/task-list";
+import { WaitingModeProvider } from "@/components/tasks/waiting-mode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PillGroup } from "@/components/ui/pill-group";
@@ -84,6 +85,7 @@ export function TasksView({
   }
 
   return (
+    <WaitingModeProvider tasks={tasks}>
     <div className="space-y-8">
       <div className="space-y-4">
         <div className="relative">
@@ -142,5 +144,6 @@ export function TasksView({
         </section>
       )}
     </div>
+    </WaitingModeProvider>
   );
 }

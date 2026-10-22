@@ -3,8 +3,8 @@ import { TASK_TYPES } from "@/lib/tasks/personal";
 import type { Task } from "@/types/task";
 
 /*
- * "Your Wrapped": a short, kind look back at the week, in the spirit of
- * Spotify Wrapped. It only ever counts what you DID, never what you didn't.
+ * "Mind Unwrapped": a short, kind look back at the week, told as tap-through
+ * cards. It only ever counts what you DID, never what you did not.
  */
 
 export interface WrappedStats {
@@ -22,6 +22,8 @@ export interface WrappedStats {
   comebacks: number;
   /** One word for the week. */
   word: string;
+  /** Dread meter: finished things that felt easier than expected. */
+  easier: number;
   /** A first task done, to name on the summary card. */
   highlight: string | null;
 }
@@ -52,7 +54,7 @@ export function wordForWeek(done: number, comebacks: number): string {
 }
 
 export function computeWrapped(
-  completed: Pick<Task, "completedAt" | "taskType" | "title">[],
+  completed: Pick<Task, "completedAt" | "taskType" | "title" | "felt">[],
   focus: { actualMinutes: number | null }[],
   comebacks: number,
   tz: string,
@@ -76,5 +78,6 @@ export function computeWrapped(
     comebacks,
     word: wordForWeek(done.length, comebacks),
     highlight: done[0]?.title ?? null,
+    easier: done.filter((t) => t.felt === "easier").length,
   };
 }

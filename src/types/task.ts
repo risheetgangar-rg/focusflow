@@ -3,6 +3,8 @@ export type TaskPriority = "low" | "medium" | "high" | "critical";
 export type TaskSource = "manual" | "brain_dump" | "voice" | "recurring";
 export type RecurrenceRule = "daily" | "weekly" | "monthly";
 export type TaskType = "bills" | "work" | "calls" | "home" | "health" | "other";
+/** Dread meter: how it felt compared with how heavy it seemed. */
+export type Felt = "easier" | "same" | "harder";
 
 export interface Task {
   id: string;
@@ -29,6 +31,8 @@ export interface Task {
   /** The "Must do" star. */
   mustDo: boolean;
   taskType: TaskType;
+  /** Set by one optional tap after finishing. */
+  felt?: Felt | null;
   createdAt: string;
   updatedAt: string;
 }

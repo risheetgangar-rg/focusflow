@@ -17,7 +17,7 @@ interface Slide {
 
 function slidesFor(stats: WrappedStats, range: string): Slide[] {
   const slides: Slide[] = [
-    { key: "intro", tint: "bg-tint-lavender", eyebrow: range, big: "Your week, wrapped.", small: "Tap to see it." },
+    { key: "intro", tint: "bg-tint-lavender", eyebrow: range, big: "Your mind, unwrapped.", small: "Tap to see your week." },
     stats.done > 0
       ? { key: "done", tint: "bg-tint-butter", eyebrow: "You finished", big: `${stats.done} ${stats.done === 1 ? "thing" : "things"}`, small: stats.highlight ? `Including “${stats.highlight}”.` : undefined }
       : { key: "done", tint: "bg-tint-butter", eyebrow: "This week", big: "A quiet one.", small: "Resting counts too." },
@@ -38,6 +38,14 @@ function slidesFor(stats: WrappedStats, range: string): Slide[] {
       eyebrow: "You locked in for",
       big: `${stats.focusMinutes} min`,
       small: `Your longest stretch: ${stats.longestFocus} min.`,
+    });
+  if (stats.easier > 0)
+    slides.push({
+      key: "dread",
+      tint: "bg-tint-mint",
+      eyebrow: "Easier than you feared",
+      big: `${stats.easier} ${stats.easier === 1 ? "thing" : "things"}`,
+      small: "Your brain said it would be hard. It wasn't. Remember that next time.",
     });
   if (stats.comebacks > 0)
     slides.push({
@@ -74,15 +82,16 @@ async function makeShareImage(stats: WrappedStats, range: string): Promise<Blob 
   ctx.fillStyle = color("--primary-foreground");
   ctx.font = `600 34px ${sans}`;
   ctx.fillText(`UNSTUCK · ${range.toUpperCase()}`, 80, 140);
-  ctx.font = `400 120px ${display}`;
-  ctx.fillText("My week,", 80, 330);
-  ctx.fillText("wrapped.", 80, 450);
+  ctx.font = `400 104px ${display}`;
+  ctx.fillText("My mind,", 80, 330);
+  ctx.fillText("unwrapped.", 80, 450);
 
   const rows: [string, string][] = [
     ["Things done", String(stats.done)],
     ...(stats.topType ? ([["Best at", stats.topType]] as [string, string][]) : []),
     ...(stats.bestTime ? ([["Best time", stats.bestTime]] as [string, string][]) : []),
     ...(stats.focusMinutes > 0 ? ([["Locked in", `${stats.focusMinutes} min`]] as [string, string][]) : []),
+    ...(stats.easier > 0 ? ([["Easier than feared", String(stats.easier)]] as [string, string][]) : []),
     ...(stats.comebacks > 0 ? ([["Came back", `${stats.comebacks}×`]] as [string, string][]) : []),
   ];
   let y = 620;
@@ -128,9 +137,9 @@ export function WrappedStory({ stats, range }: { stats: WrappedStats; range: str
     try {
       const blob = await makeShareImage(stats, range);
       if (!blob) throw new Error("no image");
-      const file = new File([blob], "my-unstuck-wrapped.png", { type: "image/png" });
+      const file = new File([blob], "my-mind-unwrapped.png", { type: "image/png" });
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: "My week, wrapped" });
+        await navigator.share({ files: [file], title: "My mind, unwrapped" });
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -167,7 +176,7 @@ export function WrappedStory({ stats, range }: { stats: WrappedStats; range: str
             aria-live="polite"
           >
             <p className="text-eyebrow opacity-70">{slide.eyebrow}</p>
-            <p className="mt-3 font-display text-6xl leading-[0.95] text-balance sm:text-8xl">{slide.big}</p>
+            <p className="mt-3 font-display text-[clamp(2rem,8vw,4rem)] leading-[0.95] text-balance">{slide.big}</p>
             {slide.small && <p className="mt-4 max-w-md text-lg opacity-75">{slide.small}</p>}
           </m.div>
         </AnimatePresence>
@@ -187,7 +196,7 @@ export function WrappedStory({ stats, range }: { stats: WrappedStats; range: str
           </Button>
         </div>
         <Button variant="brand" size="lg" onClick={share} disabled={sharing}>
-          <Share2 /> {sharing ? "Making your card…" : "Share my Wrapped"}
+          <Share2 /> {sharing ? "Making your card…" : "Share it"}
         </Button>
       </div>
       {note && <p className="text-sm text-muted-foreground">{note}</p>}

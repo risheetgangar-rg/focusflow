@@ -3,7 +3,7 @@
 import { useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { AnimatePresence, m } from "motion/react";
-import { CalendarClock, ChevronDown, Clock, Lock, MoreHorizontal, Moon, Repeat, Star, Swords, Target, Zap } from "lucide-react";
+import { CalendarClock, ChevronDown, Clock, Hourglass, Lock, MoreHorizontal, Moon, Repeat, Star, Swords, Target, Zap } from "lucide-react";
 import {
   cancelTaskAction,
   completeTaskAction,
@@ -32,6 +32,7 @@ import { isWaiting } from "@/services/recommendation-service";
 import { announceTaskDone } from "@/components/today/today-progress";
 import { StepsEditor } from "./steps-editor";
 import { URGENCY_STYLE, UrgencyChip, useUrgency } from "./urgency-chip";
+import { canWaitFor, useWaitingMode } from "./waiting-mode";
 import type { Subtask, Task } from "@/types/task";
 
 // Past dates are calm and neutral, never alarming.
@@ -53,6 +54,7 @@ export function TaskItem({
   const { celebrate, notify } = useCelebration();
   const [, startTransition] = useTransition();
   const [expanded, setExpanded] = useState(false);
+  const startWaiting = useWaitingMode();
   const [optimisticDone, setOptimisticDone] = useOptimistic(task.status === "completed");
 
   const now = new Date(nowIso);
@@ -217,6 +219,11 @@ export function TaskItem({
             />
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={() => onOpen(task)}>Edit details</DropdownMenuItem>
+              {startWaiting && !optimisticDone && canWaitFor(task, now) && (
+                <DropdownMenuItem onClick={() => startWaiting(task)}>
+                  <Hourglass /> Waiting mode
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => startTransition(() => snoozeTaskAction(task.id, 60))}>
                 Snooze for an hour
               </DropdownMenuItem>

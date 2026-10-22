@@ -64,3 +64,14 @@ export async function addTaskAction(input: unknown): Promise<{ ok: true } | { ok
   refresh();
   return { ok: true };
 }
+
+const feltSchema = z.enum(["easier", "same", "harder"]);
+
+/** The dread meter: one optional tap after finishing. Mind Unwrapped counts the "easier" ones. */
+export async function rateFeltAction(taskId: string, felt: unknown): Promise<void> {
+  const parsed = feltSchema.safeParse(felt);
+  const session = await getSession();
+  if (!parsed.success || !session) return;
+  await session.supabase.from("tasks").update({ felt: parsed.data }).eq("id", taskId).eq("user_id", session.userId);
+  revalidatePath("/review");
+}

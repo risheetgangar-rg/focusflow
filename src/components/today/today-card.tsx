@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, m } from "motion/react";
 import { Star } from "lucide-react";
-import { notNowAction } from "@/app/(dashboard)/today/card-actions";
+import { notNowAction, rateFeltAction } from "@/app/(dashboard)/today/card-actions";
 import { completeTaskAction } from "@/app/(dashboard)/tasks/actions";
 import { endFocusSessionAction, startFocusSessionAction } from "@/app/focus/actions";
 import { formatClock } from "@/components/focus/focus-logic";
@@ -13,7 +13,7 @@ import { URGENCY_STYLE, UrgencyChip, useUrgency } from "@/components/tasks/urgen
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Task } from "@/types/task";
+import type { Felt, Task } from "@/types/task";
 
 export interface CardTask {
   task: Task;
@@ -124,6 +124,43 @@ function FocusTimer({
   );
 }
 
+const FELT: { value: Felt; label: string }[] = [
+  { value: "easier", label: "Easier than I thought" },
+  { value: "same", label: "About the same" },
+  { value: "harder", label: "Harder" },
+];
+
+/** The dread meter: one optional tap. Skipping it is fine. */
+function FeltQuestion({ taskId }: { taskId: string }) {
+  const [answered, setAnswered] = useState<Felt | null>(null);
+  if (answered)
+    return (
+      <p className="mt-5 text-sm font-semibold text-brand">
+        {answered === "easier" ? "Noted. Your brain made it bigger than it was." : "Noted."}
+      </p>
+    );
+  return (
+    <div className="mt-6">
+      <p className="text-sm font-semibold">How did it feel?</p>
+      <div className="mt-3 flex flex-wrap justify-center gap-2">
+        {FELT.map((f) => (
+          <Button
+            key={f.value}
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setAnswered(f.value);
+              void rateFeltAction(taskId, f.value);
+            }}
+          >
+            {f.label}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Today is one card: the task, why it's first, its first step, and two
  * buttons. "Lock in" turns the card into a timer right here; "Not now" saves
@@ -156,7 +193,7 @@ export function TodayCard({
     autoStartId && items[0]?.task.id === autoStartId ? "focus" : "card",
   );
   const [timerMinutes, setTimerMinutes] = useState<number | null>(10);
-  const [finishedTitle, setFinishedTitle] = useState("");
+  const [finished, setFinished] = useState<{ id: string; title: string } | null>(null);
 
   // "Focus on this" arrives as ?focus=…; tidy the address so a refresh doesn't restart the timer.
   useEffect(() => {
@@ -190,7 +227,7 @@ export function TodayCard({
   function finish(sessionId: Promise<string | null>) {
     if (!item) return;
     const id = item.task.id;
-    setFinishedTitle(item.task.title);
+    setFinished({ id, title: item.task.title });
     setHidden((h) => [...h, id]);
     setPhase("done");
     startTransition(async () => {
@@ -228,7 +265,8 @@ export function TodayCard({
         ) : phase === "done" ? (
           <m.section key="done" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className={cn(shell, "text-center")}>
             <p className="font-display text-5xl sm:text-6xl">Let&apos;s go! One off the pile!!</p>
-            <p className="mt-3 text-muted-foreground line-through">{finishedTitle}</p>
+            <p className="mt-3 text-muted-foreground line-through">{finished?.title}</p>
+            {finished && <FeltQuestion key={finished.id} taskId={finished.id} />}
             {item && (
               <Button variant="outline" size="lg" className="mt-6" onClick={() => setPhase("card")}>
                 What&apos;s next

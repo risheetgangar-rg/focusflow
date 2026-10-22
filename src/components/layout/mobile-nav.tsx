@@ -12,7 +12,7 @@ const LEFT = [
   { href: "/tasks", label: "Tasks", icon: ListChecks },
 ];
 const RIGHT = [
-  { href: "/review", label: "Wrapped", icon: Sparkles },
+  { href: "/review", label: "Unwrapped", icon: Sparkles },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

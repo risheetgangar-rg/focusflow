@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PillGroup } from "@/components/ui/pill-group";
 import { splitSpoken } from "@/lib/tasks/voice-split";
+import { PRIORITIES } from "./task-form";
 import { cn } from "@/lib/utils";
 import type { TaskKind } from "@/types/task";
 
@@ -16,7 +17,7 @@ import type { TaskKind } from "@/types/task";
  * Three small choices per item: task or reminder, how important, and when.
  */
 
-type Level = "high" | "normal" | "low";
+type Level = "low" | "medium" | "high" | "critical";
 
 interface Draft {
   key: number;
@@ -32,11 +33,7 @@ const KINDS = [
   { value: "reminder", label: "Reminder" },
 ];
 
-const LEVELS = [
-  { value: "high", label: "Must do" },
-  { value: "normal", label: "Normal" },
-  { value: "low", label: "Low" },
-];
+const LEVELS = PRIORITIES;
 
 let nextKey = 0;
 
@@ -57,7 +54,7 @@ export function VoiceAdd() {
       return;
     }
     setMessage(null);
-    setDrafts((d) => [...d, ...items.map((i) => ({ key: nextKey++, ...i, level: "normal" as Level, at: "" }))]);
+    setDrafts((d) => [...d, ...items.map((i) => ({ key: nextKey++, ...i, level: "medium" as Level, at: "" }))]);
   }
 
   async function startRecording() {

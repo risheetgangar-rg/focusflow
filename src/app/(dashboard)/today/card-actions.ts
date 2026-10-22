@@ -79,16 +79,18 @@ export async function rateFeltAction(taskId: string, felt: unknown): Promise<voi
 const itemSchema = z.object({
   title: z.string().trim().min(1).max(200),
   kind: z.enum(["task", "reminder"]),
-  level: z.enum(["high", "normal", "low"]),
+  level: z.enum(["low", "medium", "high", "critical"]),
   /** Exact date and time, already turned into an ISO string by the browser. */
   at: z.string().datetime().nullable(),
 });
 const manySchema = z.array(itemSchema).min(1).max(20);
 
+/** One priority; High and Critical count as "Must do". */
 const LEVEL = {
-  high: { priority: "high", mustDo: true },
-  normal: { priority: "medium", mustDo: false },
   low: { priority: "low", mustDo: false },
+  medium: { priority: "medium", mustDo: false },
+  high: { priority: "high", mustDo: true },
+  critical: { priority: "critical", mustDo: true },
 } as const;
 
 /** Voice add: everything said out loud, checked by the person, saved in one go. */

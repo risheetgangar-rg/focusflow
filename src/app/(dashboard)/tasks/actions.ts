@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSession, type Session } from "@/lib/auth/session";
 import { zonedTimeToUtc } from "@/lib/dates/tz";
 import { bossStatus } from "@/lib/tasks/boss";
+import { TASK_TYPES, guessTaskType } from "@/lib/tasks/personal";
 import {
   breakdownStepsSchema,
   quickTaskSchema,
@@ -16,7 +17,7 @@ import { completeTaskWithRewards, EMPTY_OUTCOME } from "@/services/completion-se
 import * as taskService from "@/services/task-service";
 import type { RescheduleTarget } from "@/services/task-service";
 import type { CompletionOutcome } from "@/types/gamification";
-import type { RecurrenceRule, TaskPriority } from "@/types/task";
+import type { RecurrenceRule, TaskPriority, TaskType } from "@/types/task";
 
 export interface TaskFormState {
   error?: string;
@@ -24,6 +25,13 @@ export interface TaskFormState {
 }
 
 const SIGN_IN_AGAIN = "Please sign in again.";
+
+/** "Home", "bills", "gym stuff" → the closest kind; anything unclear is Other. */
+function typeFromText(text: string): TaskType {
+  const t = text.trim().toLowerCase();
+  const byName = TASK_TYPES.find((x) => x.value === t || x.label.toLowerCase().startsWith(t));
+  return t && byName ? byName.value : guessTaskType(text);
+}
 
 function refresh() {
   revalidatePath("/tasks");
@@ -52,23 +60,19 @@ export async function saveTask(
   const { supabase, userId, timezone } = session;
 
   const v = parsed.data;
+  const reminder = v.kind === "reminder";
+  if (reminder && (!v.dueDate || !v.dueTime)) return { error: "Reminders need a day and a time." };
+  // The form only asks for one priority now; High and Critical count as "Must do".
   const input = {
     title: v.title,
+    kind: v.kind,
     description: v.description || null,
     priority: v.priority as TaskPriority,
-    importance: v.importance,
-    urgency: v.urgency,
-    friction: v.friction,
-    estimatedMinutes: v.estimatedMinutes === "" ? null : Number(v.estimatedMinutes),
+    mustDo: v.priority === "high" || v.priority === "critical",
+    estimatedMinutes: reminder || v.estimatedMinutes === "" ? null : Number(v.estimatedMinutes),
     dueAt: v.dueDate ? zonedTimeToUtc(v.dueDate, v.dueTime, timezone).toISOString() : null,
-    scheduledAt: v.scheduledDate
-      ? zonedTimeToUtc(v.scheduledDate, v.scheduledTime, timezone).toISOString()
-      : null,
     recurrenceRule: v.recurrenceRule === "none" ? null : (v.recurrenceRule as RecurrenceRule),
-    isBoss: session.profile.gamificationMode === "full" ? v.isBoss : false,
-    taskType: v.taskType,
-    mustDo: v.mustDo,
-    fixedDate: v.fixedDate,
+    taskType: typeFromText(v.kindText || v.title),
   };
 
   if (taskId) {

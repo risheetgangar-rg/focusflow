@@ -37,7 +37,7 @@ export function TaskEditorDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>{task ? "Edit task" : "New task"}</DialogTitle>
+          <DialogTitle>{task ? (task.kind === "reminder" ? "Edit reminder" : "Edit task") : "Add something"}</DialogTitle>
           <DialogDescription className="sr-only">
             {task ? "Change the details of this task." : "Add something to your list."}
           </DialogDescription>

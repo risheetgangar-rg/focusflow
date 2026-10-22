@@ -35,7 +35,7 @@ export function SiteNav() {
           <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }), "hidden text-white hover:bg-white/10 hover:text-white sm:inline-flex")}>
             Log in
           </Link>
-          <Link href="/signup" className={cn(buttonVariants(), "bg-sunny text-indigo hover:bg-sunny/90")}>
+          <Link href="/signup" className={cn(buttonVariants(), "bg-sunny text-indigo [--btn-shade:#c9a92c] hover:bg-sunny")}>
             Start free
           </Link>
         </div>

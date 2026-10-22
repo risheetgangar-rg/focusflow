@@ -73,7 +73,7 @@ export function AppSidebar({
       </div>
 
       <div className="px-4">
-        <Button size="lg" onClick={openCapture} className="w-full justify-between bg-sunny pr-4 pl-5 text-indigo hover:bg-sunny/90">
+        <Button size="lg" onClick={openCapture} className="w-full justify-between bg-sunny pr-4 pl-5 text-indigo [--btn-shade:#c9a92c] hover:brightness-105">
           <span className="flex items-center gap-2">
             <Plus /> Add something
           </span>

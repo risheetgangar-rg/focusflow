@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, m } from "motion/react";
-import { Check, Pause, Play, Plus, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { notNowAction } from "@/app/(dashboard)/today/card-actions";
 import { completeTaskAction } from "@/app/(dashboard)/tasks/actions";
 import { endFocusSessionAction, startFocusSessionAction } from "@/app/focus/actions";
@@ -23,12 +23,6 @@ export interface CardTask {
 }
 
 const EASE = [0.22, 1, 0.36, 1] as const;
-const TIMERS = [
-  { label: "5 min", minutes: 5 },
-  { label: "10 min", minutes: 10 },
-  { label: "25 min", minutes: 25 },
-  { label: "No timer", minutes: null },
-];
 const NOT_NOW_LIMIT = 2;
 
 function notNowKey() {
@@ -48,7 +42,11 @@ function isSample(task: Task) {
   return task.description?.startsWith("Sample task") ?? false;
 }
 
-/** The calm timer that the card turns into after "Lock in". */
+/**
+ * Lock-in mode: the whole screen becomes just the timer and two buttons,
+ * so nothing else competes for attention. Time is counted from timestamps,
+ * so it stays right if you switch apps.
+ */
 function FocusTimer({
   item,
   startMinutes,
@@ -76,76 +74,51 @@ function FocusTimer({
   const remaining = limit === null ? null : Math.max(0, limit - elapsed);
   const timesUp = remaining === 0;
   const seconds = remaining === null ? Math.floor(elapsed / 1000) : Math.ceil(remaining / 1000);
+  const fraction = limit === null ? 1 : Math.max(0, Math.min(1, (remaining ?? 0) / limit));
   const sessionId = () => session.current ?? Promise.resolve(null);
+  const r = 120;
+  const circumference = 2 * Math.PI * r;
 
   return (
-    <div className="space-y-6 text-center">
-      <div>
-        <p className="text-eyebrow">Locked in</p>
-        <p className="mt-2 font-display text-3xl leading-tight sm:text-4xl">{item.task.title}</p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">First step:</span> {item.firstStep}
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Locked in: ${item.task.title}`}
+      className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-12 bg-background px-6"
+    >
+      <div className="relative grid size-72 place-items-center animate-duo-pop sm:size-80" role="timer">
+        <svg viewBox="0 0 280 280" className="absolute inset-0 size-full -rotate-90" aria-hidden>
+          <circle cx="140" cy="140" r={r} fill="none" strokeWidth="18" className="stroke-muted" />
+          <circle
+            cx="140"
+            cy="140"
+            r={r}
+            fill="none"
+            strokeWidth="18"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference * (1 - fraction)}
+            className={cn("transition-[stroke-dashoffset] duration-1000 ease-linear", timesUp ? "stroke-sunny" : "stroke-brand")}
+          />
+        </svg>
+        <p className={cn("font-display text-6xl tabular-nums sm:text-7xl", timesUp && "text-[2.6rem] sm:text-5xl")}>
+          {timesUp ? "Time's up" : formatClock(seconds)}
         </p>
       </div>
 
-      <div
-        className={cn(
-          "mx-auto grid size-44 place-items-center rounded-full border-[6px] transition-colors",
-          timesUp ? "border-tint-butter bg-tint-butter/50" : "border-brand/25",
-        )}
-        role="timer"
-        aria-live="off"
-      >
-        <div>
-          <p className="font-display text-5xl tabular-nums">{timesUp ? "Time's up" : formatClock(seconds)}</p>
-          {!timesUp && (
-            <p className="text-xs tracking-wide text-muted-foreground uppercase">
-              {!clock.running ? "paused" : remaining === null ? "focusing" : "left"}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {!timesUp && elapsed < 15_000 && (
-        <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Timer length">
-          {TIMERS.map((t) => {
-            const active = (t.minutes === null && limit === null) || (t.minutes !== null && limit === t.minutes * 60_000);
-            return (
-              <button
-                key={t.label}
-                type="button"
-                onClick={() => setLimit(t.minutes === null ? null : t.minutes * 60_000)}
-                aria-pressed={active}
-                className={cn(
-                  "h-9 rounded-full border border-border px-4 text-sm font-medium transition-colors",
-                  active ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted",
-                )}
-              >
-                {t.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      <div className="flex flex-wrap justify-center gap-3">
-        {timesUp && (
-          <Button variant="outline" size="lg" onClick={() => setLimit((l) => (l ?? elapsed) + 5 * 60_000)}>
-            <Plus /> 5 min
-          </Button>
-        )}
-        <Button variant="brand" size="lg" onClick={() => onDone(sessionId())}>
-          <Check /> Done
-        </Button>
+      <div className="flex w-full max-w-sm gap-3">
         {timesUp ? (
-          <Button variant="ghost" size="lg" onClick={() => onPark(sessionId())}>
-            Park it
+          <Button variant="outline" size="xl" className="flex-1" onClick={() => setLimit((l) => (l ?? elapsed) + 5 * 60_000)}>
+            +5 min
           </Button>
         ) : (
-          <Button variant="ghost" size="lg" onClick={clock.running ? clock.pause : clock.resume}>
-            {clock.running ? <Pause /> : <Play />} {clock.running ? "Pause" : "Resume"}
+          <Button variant="outline" size="xl" className="flex-1" onClick={() => onPark(sessionId())}>
+            Stop
           </Button>
         )}
+        <Button variant="brand" size="xl" className="flex-1" onClick={() => onDone(sessionId())}>
+          Done
+        </Button>
       </div>
     </div>
   );
@@ -268,9 +241,9 @@ export function TodayCard({
             <p className="mt-3 text-muted-foreground">Add something below whenever it comes to mind.</p>
           </m.section>
         ) : phase === "focus" ? (
-          <m.section key={`focus-${item.task.id}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ ease: EASE }} className={shell}>
+          <m.div key={`focus-${item.task.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <FocusTimer item={item} startMinutes={timerMinutes} onDone={finish} onPark={park} />
-          </m.section>
+          </m.div>
         ) : (
           <m.section
             key={`card-${item.task.id}`}

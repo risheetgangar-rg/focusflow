@@ -12,7 +12,7 @@ export function HeroActions() {
     <div className="flex flex-col items-center gap-5">
       <div className="flex w-full max-w-sm flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row">
         {/* No prefetch: opening /try creates a guest, so it should only happen on a real tap. */}
-        <Link href="/try" prefetch={false} className={cn(buttonVariants({ size: "xl" }), "bg-sunny text-indigo hover:bg-sunny/90")}>
+        <Link href="/try" prefetch={false} className={cn(buttonVariants({ size: "xl" }), "bg-sunny text-indigo [--btn-shade:#c9a92c] hover:bg-sunny")}>
           Try the comeback
           <ArrowRight aria-hidden />
         </Link>

@@ -67,11 +67,49 @@ export async function addTaskAction(input: unknown): Promise<{ ok: true } | { ok
 
 const feltSchema = z.enum(["easier", "same", "harder"]);
 
-/** The dread meter: one optional tap after finishing. Mind Unwrapped counts the "easier" ones. */
+/** The dread meter: one optional tap after finishing. The Ta-Da List counts the "easier" ones. */
 export async function rateFeltAction(taskId: string, felt: unknown): Promise<void> {
   const parsed = feltSchema.safeParse(felt);
   const session = await getSession();
   if (!parsed.success || !session) return;
   await session.supabase.from("tasks").update({ felt: parsed.data }).eq("id", taskId).eq("user_id", session.userId);
   revalidatePath("/review");
+}
+
+const itemSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  kind: z.enum(["task", "reminder"]),
+  level: z.enum(["high", "normal", "low"]),
+  /** Exact date and time, already turned into an ISO string by the browser. */
+  at: z.string().datetime().nullable(),
+});
+const manySchema = z.array(itemSchema).min(1).max(20);
+
+const LEVEL = {
+  high: { priority: "high", mustDo: true },
+  normal: { priority: "medium", mustDo: false },
+  low: { priority: "low", mustDo: false },
+} as const;
+
+/** Voice add: everything said out loud, checked by the person, saved in one go. */
+export async function addManyAction(input: unknown): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  const parsed = manySchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Something in the list needs a look." };
+  if (parsed.data.some((i) => i.kind === "reminder" && !i.at)) return { ok: false, error: "Reminders need a time." };
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Please sign in again." };
+
+  for (const item of parsed.data) {
+    await taskRepo.createTask(session.supabase, session.userId, {
+      title: item.title,
+      kind: item.kind,
+      taskType: guessTaskType(item.title),
+      dueAt: item.at,
+      ...LEVEL[item.level],
+      source: "voice",
+    });
+  }
+  await track(session.supabase, session.userId, "task_created", { source: "voice_add", count: parsed.data.length });
+  refresh();
+  return { ok: true, count: parsed.data.length };
 }

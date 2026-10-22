@@ -128,7 +128,8 @@ export function rankForToday(tasks: Task[], now: Date, helpAreas: string[] = [])
   const parked = (t: Task) => dueIn(t) < 0;
 
   return tasks
-    .filter((t) => t.status === "pending" && !t.isBoss && !waiting(t, now))
+    // Reminders are nudges, not things to lock in on, so they never take the one card.
+    .filter((t) => t.status === "pending" && t.kind !== "reminder" && !t.isBoss && !waiting(t, now))
     .sort(
       (a, b) =>
         Number(parked(a)) - Number(parked(b)) ||

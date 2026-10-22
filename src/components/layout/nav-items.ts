@@ -29,7 +29,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Look back",
-    items: [{ href: "/review", label: "Mind Unwrapped", icon: Sparkles }],
+    items: [{ href: "/review", label: "Ta-Da List", icon: Sparkles }],
   },
   {
     title: "Capture",

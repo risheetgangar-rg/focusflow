@@ -32,7 +32,7 @@ export function canWaitFor(task: Task, now: Date): boolean {
 export function fitsBefore(tasks: Task[], target: Task, minutesLeft: number): Task[] {
   const quick = (t: Task) => (t.taskType === "calls" || t.taskType === "home" ? 0 : 1);
   return tasks
-    .filter((t) => t.id !== target.id && t.status === "pending" && !t.fixedDate)
+    .filter((t) => t.id !== target.id && t.status === "pending" && !t.fixedDate && t.kind !== "reminder")
     .filter((t) => (t.estimatedMinutes ?? 10) <= Math.min(30, minutesLeft - 5))
     .sort((a, b) => (a.estimatedMinutes ?? 10) - (b.estimatedMinutes ?? 10) || quick(a) - quick(b))
     .slice(0, FITS_LIMIT);

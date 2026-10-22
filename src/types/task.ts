@@ -5,6 +5,8 @@ export type RecurrenceRule = "daily" | "weekly" | "monthly";
 export type TaskType = "bills" | "work" | "calls" | "home" | "health" | "other";
 /** Dread meter: how it felt compared with how heavy it seemed. */
 export type Felt = "easier" | "same" | "harder";
+/** A task is something you do (with a timer); a reminder is a nudge at a time. */
+export type TaskKind = "task" | "reminder";
 
 export interface Task {
   id: string;
@@ -33,6 +35,7 @@ export interface Task {
   taskType: TaskType;
   /** Set by one optional tap after finishing. */
   felt?: Felt | null;
+  kind?: TaskKind;
   createdAt: string;
   updatedAt: string;
 }
@@ -63,6 +66,7 @@ export interface TaskInput {
   fixedDate?: boolean;
   mustDo?: boolean;
   taskType?: TaskType;
+  kind?: TaskKind;
   /** For a recurring series: the occurrence this one was generated from. */
   parentTaskId?: string | null;
 }

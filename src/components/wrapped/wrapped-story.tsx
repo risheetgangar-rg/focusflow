@@ -17,7 +17,7 @@ interface Slide {
 
 function slidesFor(stats: WrappedStats, range: string): Slide[] {
   const slides: Slide[] = [
-    { key: "intro", tint: "bg-tint-lavender", eyebrow: range, big: "Your mind, unwrapped.", small: "Tap to see your week." },
+    { key: "intro", tint: "bg-tint-lavender", eyebrow: range, big: "Your week's ta-da.", small: "Everything you did. Tap to see it." },
     stats.done > 0
       ? { key: "done", tint: "bg-tint-butter", eyebrow: "You finished", big: `${stats.done} ${stats.done === 1 ? "thing" : "things"}`, small: stats.highlight ? `Including “${stats.highlight}”.` : undefined }
       : { key: "done", tint: "bg-tint-butter", eyebrow: "This week", big: "A quiet one.", small: "Resting counts too." },
@@ -83,8 +83,8 @@ async function makeShareImage(stats: WrappedStats, range: string): Promise<Blob 
   ctx.font = `600 34px ${sans}`;
   ctx.fillText(`UNSTUCK · ${range.toUpperCase()}`, 80, 140);
   ctx.font = `400 104px ${display}`;
-  ctx.fillText("My mind,", 80, 330);
-  ctx.fillText("unwrapped.", 80, 450);
+  ctx.fillText("My week's", 80, 330);
+  ctx.fillText("ta-da.", 80, 450);
 
   const rows: [string, string][] = [
     ["Things done", String(stats.done)],
@@ -137,9 +137,9 @@ export function WrappedStory({ stats, range }: { stats: WrappedStats; range: str
     try {
       const blob = await makeShareImage(stats, range);
       if (!blob) throw new Error("no image");
-      const file = new File([blob], "my-mind-unwrapped.png", { type: "image/png" });
+      const file = new File([blob], "my-ta-da-list.png", { type: "image/png" });
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: "My mind, unwrapped" });
+        await navigator.share({ files: [file], title: "My ta-da list" });
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");

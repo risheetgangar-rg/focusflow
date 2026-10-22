@@ -3,7 +3,7 @@
 import { useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { AnimatePresence, m } from "motion/react";
-import { CalendarClock, ChevronDown, Clock, Hourglass, Lock, MoreHorizontal, Moon, Repeat, Star, Swords, Target, Zap } from "lucide-react";
+import { Bell, CalendarClock, ChevronDown, Hourglass, MoreHorizontal, Moon, Star, Target } from "lucide-react";
 import {
   cancelTaskAction,
   completeTaskAction,
@@ -25,8 +25,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { describeDue } from "@/lib/dates/format";
-import { bossStatus } from "@/lib/tasks/boss";
-import { shouldSuggestBreakdown } from "@/lib/tasks/task-breaker";
 import { cn } from "@/lib/utils";
 import { isWaiting } from "@/services/recommendation-service";
 import { announceTaskDone } from "@/components/today/today-progress";
@@ -55,6 +53,7 @@ export function TaskItem({
   const [, startTransition] = useTransition();
   const [expanded, setExpanded] = useState(false);
   const startWaiting = useWaitingMode();
+  const isReminder = task.kind === "reminder";
   const [optimisticDone, setOptimisticDone] = useOptimistic(task.status === "completed");
 
   const now = new Date(nowIso);
@@ -65,12 +64,6 @@ export function TaskItem({
   const plan = task.scheduledAt && task.scheduledAt !== task.dueAt && isWaiting(task, now) ? describeDue(task.scheduledAt, now, timezone) : null;
   const planLabel = plan ? (plan.tone === "today" ? `Back at ${plan.label.split(" · ")[1] ?? "later"}` : `Planned ${plan.label}`) : null;
   const doneSteps = subtasks.filter((s) => s.completed).length;
-  const boss = task.isBoss ? bossStatus(subtasks) : null;
-  const needsPush = shouldSuggestBreakdown({
-    friction: task.friction,
-    estimatedMinutes: task.estimatedMinutes,
-    subtaskCount: subtasks.length,
-  });
 
   function toggleDone(checked: boolean) {
     // Outside the transition, so the Today ring moves right away instead of after the save.
@@ -110,7 +103,7 @@ export function TaskItem({
     <div
       className={cn(
         "group relative overflow-hidden rounded-2xl border border-l-4 border-border bg-card px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:shadow-soft",
-        !optimisticDone && URGENCY_STYLE[urgency].edge,
+        !optimisticDone && !isReminder && URGENCY_STYLE[urgency].edge,
         optimisticDone && "opacity-60",
       )}
     >
@@ -140,45 +133,25 @@ export function TaskItem({
                 <CalendarClock /> {due.label}
               </Badge>
             )}
+            {/* Kept to the few things that matter at a glance; the rest lives in Edit details. */}
             {planLabel && (
               <Badge variant="sky">
                 <Moon /> {planLabel}
               </Badge>
             )}
-            {task.estimatedMinutes && (
-              <Badge variant="secondary">
-                <Clock /> {task.estimatedMinutes} min
+            {isReminder ? (
+              <Badge variant="sky">
+                <Bell /> Reminder
               </Badge>
+            ) : (
+              !optimisticDone && <UrgencyChip urgency={urgency} />
             )}
-            {!optimisticDone && <UrgencyChip urgency={urgency} />}
             {task.mustDo && (
               <Badge variant="secondary">
                 <Star /> Must do
               </Badge>
             )}
-            {task.fixedDate && (
-              <Badge variant="outline">
-                <Lock /> Fixed date
-              </Badge>
-            )}
             {task.description?.startsWith("Sample task") && <Badge variant="outline">Sample</Badge>}
-            {task.isBoss && (
-              <Badge variant="rose">
-                <Swords /> Boss
-              </Badge>
-            )}
-            {task.recurrenceRule && (
-              <Badge variant="outline">
-                <Repeat /> {task.recurrenceRule}
-              </Badge>
-            )}
-            {needsPush && !task.isBoss && (
-              <button type="button" onClick={() => onOpen(task)} className="rounded-full">
-                <Badge variant="butter" className="cursor-pointer hover:brightness-95">
-                  <Zap /> Hard to start? Break it down
-                </Badge>
-              </button>
-            )}
             {subtasks.length > 0 && (
               <button
                 type="button"
@@ -192,15 +165,10 @@ export function TaskItem({
             )}
           </div>
 
-          {boss && boss.total > 0 && (
-            <div className="mt-2.5 h-1.5 w-full max-w-60 overflow-hidden rounded-full bg-muted" title={`Boss HP ${boss.hp}`}>
-              <div className="h-full rounded-full bg-destructive transition-[width] duration-700" style={{ width: `${boss.hp}%` }} />
-            </div>
-          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-0.5">
-          {!optimisticDone && (
+          {!optimisticDone && !isReminder && (
             <Link
               href={`/today?focus=${task.id}`}
               aria-label={`Focus on "${task.title}"`}

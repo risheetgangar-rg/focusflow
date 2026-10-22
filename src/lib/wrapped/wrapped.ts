@@ -3,7 +3,7 @@ import { TASK_TYPES } from "@/lib/tasks/personal";
 import type { Task } from "@/types/task";
 
 /*
- * "Mind Unwrapped": a short, kind look back at the week, told as tap-through
+ * "Ta-Da List" (the opposite of a to-do list): a short, kind look back at the week, told as tap-through
  * cards. It only ever counts what you DID, never what you did not.
  */
 

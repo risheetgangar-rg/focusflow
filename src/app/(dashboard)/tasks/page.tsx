@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AddTaskButtons } from "@/components/tasks/add-task-buttons";
+import { VoiceAdd } from "@/components/tasks/voice-add";
 import { TasksView } from "@/components/tasks/tasks-view";
 import { requireSession } from "@/lib/auth/session";
 import { groupSubtasks } from "@/lib/tasks/group";
@@ -23,11 +23,15 @@ export default async function TasksPage() {
     <div className="mx-auto w-full max-w-4xl">
       <header className="animate-rise mb-8 flex flex-wrap items-end justify-between gap-4 sm:mb-10">
         <div>
-          <p className="text-eyebrow text-muted-foreground">Everything on your list</p>
+          <p className="text-eyebrow text-muted-foreground">Tasks and reminders</p>
           <h1 className="mt-2 font-display text-5xl leading-none sm:text-7xl">Tasks</h1>
         </div>
-        <AddTaskButtons />
+
       </header>
+
+      <div className="mb-10">
+        <VoiceAdd />
+      </div>
 
       <TasksView tasks={tasks} subtasksByTask={groupSubtasks(subtasks)} nowIso={now.toISOString()} />
     </div>

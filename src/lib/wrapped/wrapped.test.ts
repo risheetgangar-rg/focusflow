@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { computeWrapped, wordForWeek } from "./wrapped";
 
-describe("Mind Unwrapped", () => {
+describe("Ta-Da List", () => {
   it("only counts what was done, and finds the favourite kind, time and day", () => {
     const stats = computeWrapped(
       [

@@ -4,11 +4,11 @@ import { requireSession } from "@/lib/auth/session";
 import { computeWrapped } from "@/lib/wrapped/wrapped";
 import * as taskRepo from "@/repositories/task-repository";
 
-export const metadata: Metadata = { title: "Mind Unwrapped" };
+export const metadata: Metadata = { title: "Ta-Da List" };
 
 const DAY = 86_400_000;
 
-/** Mind Unwrapped: a tap-through look back at the last seven days. Only what you did, never what you didn't. */
+/** Ta-Da List: a tap-through look back at the last seven days. Only what you did, never what you didn't. */
 export default async function WrappedPage() {
   const { supabase, userId, timezone } = await requireSession();
   const now = new Date();
@@ -43,7 +43,7 @@ export default async function WrappedPage() {
     <div className="mx-auto w-full max-w-2xl space-y-6">
       <header className="animate-rise">
         <p className="text-eyebrow text-muted-foreground">Look back</p>
-        <h1 className="mt-2 font-display text-4xl leading-none sm:text-6xl">Mind Unwrapped</h1>
+        <h1 className="mt-2 font-display text-4xl leading-none sm:text-6xl">Ta-Da List</h1>
       </header>
       <WrappedStory stats={stats} range={range} />
     </div>

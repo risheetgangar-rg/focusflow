@@ -25,6 +25,7 @@ interface TaskRow {
   must_do: boolean;
   task_type: string;
   felt?: string | null;
+  kind?: string;
   created_at: string;
   updated_at: string;
 }
@@ -67,6 +68,7 @@ function toTask(row: TaskRow): Task {
     mustDo: row.must_do ?? false,
     taskType: (row.task_type ?? "other") as Task["taskType"],
     felt: (row.felt ?? null) as Task["felt"],
+    kind: (row.kind ?? "task") as Task["kind"],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -102,6 +104,7 @@ function toRow(input: Partial<TaskInput>) {
     ...(input.fixedDate !== undefined && { fixed_date: input.fixedDate }),
     ...(input.mustDo !== undefined && { must_do: input.mustDo }),
     ...(input.taskType !== undefined && { task_type: input.taskType }),
+    ...(input.kind !== undefined && { kind: input.kind }),
   };
 }
 

@@ -1,36 +1,42 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-/** App icon: a deep indigo square with a glowing yellow "U" (from the Unstuck logo). */
+/** App icon: the glowing "UN" from the Unstuck logo on its indigo square. */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <span
+    <Image
+      src="/icon-192.png"
+      alt=""
+      width={36}
+      height={36}
       aria-hidden
-      className={cn(
-        "inline-grid size-9 shrink-0 place-items-center rounded-[26%] bg-indigo font-display text-lg leading-none text-sunny shadow-[inset_0_0_0_1px_rgb(255_255_255/0.12)]",
-        className,
-      )}
-    >
-      <span className="[text-shadow:0_0_12px_rgb(255_224_102/0.55)]">U</span>
-    </span>
+      className={cn("size-9 shrink-0 rounded-[26%]", className)}
+    />
   );
 }
 
 /**
- * The Unstuck wordmark: a solid, glowing "UN" and an outlined "STUCK" in yellow.
- * It's made for the indigo header; on a white background pass `onLight` and it
- * sits on its own indigo chip, like the logo artwork.
+ * The Unstuck wordmark, from the logo artwork. Its background was cut away so
+ * it glows straight off the indigo header instead of sitting in a box. On a
+ * white page pass `onLight` and it gets its own indigo badge.
  */
 export function Wordmark({ className, onLight = false }: { className?: string; onLight?: boolean }) {
   return (
     <span
       className={cn(
-        "inline-flex items-baseline text-[1.75rem] leading-none tracking-[0.02em] text-sunny",
-        onLight && "rounded-xl bg-indigo px-3 py-2",
+        "inline-flex items-center",
+        onLight && "rounded-2xl bg-indigo px-3 py-1.5 shadow-[0_4px_0_#0f0066]",
         className,
       )}
     >
-      <span className="font-display [text-shadow:0_0_14px_rgb(255_224_102/0.6)]">UN</span>
-      <span className="font-outline">STUCK</span>
+      <Image
+        src="/logo-unstuck.png"
+        alt="Unstuck"
+        width={1664}
+        height={719}
+        priority
+        className="h-10 w-auto select-none [filter:drop-shadow(0_0_10px_rgb(255_224_102/0.25))]"
+      />
     </span>
   );
 }

@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   description:
     "A calm, friendly companion for brains that start late: dump everything out, see what to do next, and make it easy to begin.",
   manifest: "/manifest.json",
-  icons: { icon: "/icon.svg", apple: "/apple-touch-icon.png" },
+  icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
   openGraph: {
     title: "Unstuck — one step at a time",
     description: "Dump it all out. See what's next. Make it easy to begin.",

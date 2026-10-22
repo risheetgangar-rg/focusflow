@@ -1,4 +1,4 @@
-import FluxLines from "./FluxLines";
+import PatternWaves from "@/components/effects/PatternWaves";
 import { HeroActions } from "./hero-actions";
 import { Orbit } from "./orbit";
 import { Rise } from "./rise";
@@ -10,17 +10,18 @@ import { Rise } from "./rise";
 export function Hero() {
   return (
     <section className="relative isolate overflow-hidden bg-brand-gradient pt-12 text-white sm:pt-20">
-      {/* Flowing ink lines behind the headline; the cursor curls them, a click swirls them. */}
-      <FluxLines
-        className="pointer-events-none absolute! inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black_55%,transparent_85%)]"
-        colors={["#ffffff", "#e6f05a", "#ffffff"]}
-        glow={1.6}
-        opacity={0.55}
-        rimWidth={0.2}
-        lineWidth={1}
-        flowDirection="down"
-        mouseInteraction
-        clickSwirl
+      {/* Whitish dot waves drifting over the blue; moving the cursor ripples them, a click drops a splash. */}
+      <PatternWaves
+        className="absolute! inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black_60%,transparent_92%)]"
+        preset="silk"
+        color="#eef2ff"
+        backgroundColor="transparent"
+        opacity={0.75}
+        fade="center"
+        fadeSize={0.6}
+        interactive
+        cursorSize={60}
+        cursorStrength={0.7}
       />
       <div className="mx-auto w-full max-w-[88rem] px-5 text-center sm:px-8">
         <Rise>

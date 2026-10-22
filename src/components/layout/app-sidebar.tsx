@@ -18,11 +18,11 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
     return (
       <span
         aria-disabled="true"
-        className="flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-white/40"
+        className="flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-white/60"
       >
         <Icon size={18} />
         {item.label}
-        <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[0.65rem] text-white/60">Coming soon</span>
+        <span className="ml-auto rounded-full bg-white/15 px-2 py-0.5 text-[0.65rem] font-semibold text-white">Coming soon</span>
       </span>
     );
   }
@@ -34,12 +34,12 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
         "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-150",
         active
           ? "bg-white text-indigo shadow-soft"
-          : "text-white/80 hover:bg-white/10 hover:text-white",
+          : "text-white hover:bg-white/12",
       )}
     >
       <Icon
         size={18}
-        className={cn("transition-colors", active ? "text-royal" : "text-white/60 group-hover:text-white")}
+        className={cn("transition-colors", active ? "text-royal" : "text-white/85 group-hover:text-white")}
       />
       {item.label}
     </Link>
@@ -87,7 +87,7 @@ export function AppSidebar({
           if (items.length === 0) return null;
           return (
             <div key={group.title}>
-              <p className="text-eyebrow mb-1.5 px-3 text-white/55">{group.title}</p>
+              <p className="mb-2 px-3 text-[0.7rem] font-bold tracking-[0.16em] text-sunny uppercase">{group.title}</p>
               <div className="space-y-0.5">
                 {items.map((item) => (
                   <NavLink key={item.href} item={item} active={isActivePath(pathname, item.href)} />

@@ -26,7 +26,6 @@ export const updatePasswordSchema = z.object({
 
 export const updateProfileSchema = z.object({
   displayName: z.string().trim().min(1, "What should we call you?").max(80),
-  timezone: z.string().refine(isValidTimezone, "Pick a timezone from the list."),
 });
 
 export const gamificationModeSchema = z.enum(["off", "light", "full"]);

@@ -13,13 +13,6 @@ import { ThemePicker } from "./theme-picker";
 
 export const metadata: Metadata = { title: "Settings" };
 
-/** Every timezone this runtime knows, UTC first. Worked out here so the browser never has to guess. */
-function timezoneOptions(current: string): string[] {
-  const known = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [];
-  const rest = [...new Set([...known, current])].filter((zone) => zone !== "UTC").sort();
-  return ["UTC", ...rest];
-}
-
 export default async function SettingsPage() {
   const { supabase, userId, email, isGuest, profile, timezone } = await requireSession();
 
@@ -47,12 +40,11 @@ export default async function SettingsPage() {
             icon={User}
             tint="bg-tint-lavender"
             title="Profile"
-            description="How we greet you, and when your day starts."
+            description="How we greet you."
           >
             <ProfileForm
               displayName={profile.displayName ?? ""}
               timezone={timezone}
-              timezones={timezoneOptions(timezone)}
             />
           </SettingsSection>
         </StaggerItem>

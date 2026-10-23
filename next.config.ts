@@ -8,7 +8,8 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "DENY" },
+          // Only this site may show itself in a frame (the /phone demo page); every other site is still blocked.
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           // Voice capture needs the microphone; nothing else on this site needs camera or location.
           { key: "Permissions-Policy", value: "microphone=(self), camera=(), geolocation=()" },

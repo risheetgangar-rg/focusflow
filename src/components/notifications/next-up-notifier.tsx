@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { showNextUp } from "@/lib/notifications/local";
-import { isPushSupported, subscribeToPush } from "@/lib/notifications/subscribe";
+import { setNotificationsAllowed, showNextUp } from "@/lib/notifications/local";
+import { isPushSupported, relinkPush, subscribeToPush } from "@/lib/notifications/subscribe";
 import type { Win } from "@/services/win-service";
 
 const ASKED = "unstuck-asked-reminders";
@@ -23,13 +23,25 @@ function isInstalled() {
  * the first time the app is opened from the home screen, asks to turn on
  * reminders before anything else.
  */
-export function NextUpNotifier() {
+export function NextUpNotifier({ isGuest }: { isGuest: boolean }) {
+  // Set while rendering (not in an effect) so the Lock-in timer, which can start first, already knows.
+  if (typeof window !== "undefined") setNotificationsAllowed(!isGuest);
   const router = useRouter();
   const [ask, setAsk] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    void showNextUp();
+    // Guests only look around: clear anything left on this phone and stop here.
+    if (isGuest) {
+      void navigator.serviceWorker?.getRegistration().then((reg) => reg?.getNotifications().then((list) => list.forEach((n) => n.close())));
+      return;
+    }
+    // Make sure this phone's notifications belong to whoever is signed in, then refresh them.
+    void relinkPush().then(() => showNextUp());
+    const refresh = () => void showNextUp();
+    window.addEventListener("unstuck:tasks-changed", refresh);
+    const onVisible = () => document.visibilityState === "visible" && refresh();
+    document.addEventListener("visibilitychange", onVisible);
 
     const onWin = (e: Event) => void showNextUp((e as CustomEvent<Win>).detail.next);
     window.addEventListener("unstuck:win", onWin);
@@ -49,9 +61,11 @@ export function NextUpNotifier() {
 
     return () => {
       window.removeEventListener("unstuck:win", onWin);
+      window.removeEventListener("unstuck:tasks-changed", refresh);
+      document.removeEventListener("visibilitychange", onVisible);
       navigator.serviceWorker?.removeEventListener("message", onMessage);
     };
-  }, [router]);
+  }, [router, isGuest]);
 
   function done() {
     try {

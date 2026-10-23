@@ -13,13 +13,6 @@ import { ThemePicker } from "./theme-picker";
 
 export const metadata: Metadata = { title: "Settings" };
 
-/** Every timezone this runtime knows, UTC first. Worked out here so the browser never has to guess. */
-function timezoneOptions(current: string): string[] {
-  const known = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [];
-  const rest = [...new Set([...known, current])].filter((zone) => zone !== "UTC").sort();
-  return ["UTC", ...rest];
-}
-
 export default async function SettingsPage() {
   const { supabase, userId, email, isGuest, profile, timezone } = await requireSession();
 
@@ -47,12 +40,11 @@ export default async function SettingsPage() {
             icon={User}
             tint="bg-tint-lavender"
             title="Profile"
-            description="How we greet you, and when your day starts."
+            description="How we greet you."
           >
             <ProfileForm
               displayName={profile.displayName ?? ""}
               timezone={timezone}
-              timezones={timezoneOptions(timezone)}
             />
           </SettingsSection>
         </StaggerItem>
@@ -82,7 +74,18 @@ export default async function SettingsPage() {
             title="Reminders"
             description="Optional nudges, on your terms."
           >
-            <NotificationSettings prefs={prefs} />
+            {isGuest ? (
+              <p className="rounded-2xl bg-card/70 px-5 py-4 text-sm">
+                Reminders and notifications are for your own account. You&apos;re looking around as a guest, so they&apos;re
+                off.{" "}
+                <a href="/login" className="font-semibold text-brand underline underline-offset-4">
+                  Log in or sign up
+                </a>{" "}
+                to turn them on.
+              </p>
+            ) : (
+              <NotificationSettings prefs={prefs} />
+            )}
           </SettingsSection>
         </StaggerItem>
 

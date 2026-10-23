@@ -59,3 +59,19 @@ export async function unsubscribeFromPush(): Promise<void> {
   });
   await subscription.unsubscribe();
 }
+
+/**
+ * On every app open: if this phone already has notifications on, make sure
+ * they belong to whoever is signed in now (not a guest from earlier).
+ */
+export async function relinkPush(): Promise<void> {
+  if (!isPushSupported() || Notification.permission !== "granted") return;
+  const registration = await navigator.serviceWorker.getRegistration();
+  const subscription = await registration?.pushManager.getSubscription();
+  if (!subscription) return;
+  await fetch("/api/notifications/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(subscription.toJSON()),
+  }).catch(() => {});
+}

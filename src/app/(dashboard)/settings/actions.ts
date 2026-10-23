@@ -23,7 +23,6 @@ export async function updateProfileAction(
 ): Promise<SettingsFormState> {
   const parsed = updateProfileSchema.safeParse({
     displayName: formData.get("displayName"),
-    timezone: formData.get("timezone"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check your details." };
@@ -68,12 +67,11 @@ export async function setGamificationModeAction(mode: string): Promise<{ ok: boo
   return { ok: true };
 }
 
-/** First-visit housekeeping: a profile still on the UTC default adopts the browser's timezone. */
+/** The timezone always follows the phone: when it changes (travel, a new phone), the profile follows quietly. */
 export async function syncTimezoneAction(timezone: string): Promise<void> {
   if (!isValidTimezone(timezone)) return;
   const session = await getSession();
   if (!session || session.profile.timezone === timezone) return;
-  if (session.profile.timezone !== "UTC") return;
   await updateProfile(session.supabase, session.userId, { timezone });
   revalidatePath("/", "layout");
 }

@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { announceTaskDone } from "@/components/today/today-progress";
 import { finishTaskAction } from "@/app/(dashboard)/today/card-actions";
 import { announceWin } from "@/components/rewards/win-layer";
+import { announceTasksChanged, clearTaskNotifications } from "@/lib/notifications/local";
 import { StepsEditor } from "./steps-editor";
 import { REPEAT_LABEL } from "@/lib/dates/recurrence";
 import { TONE_STYLE, toneOf } from "@/lib/tasks/tone";
@@ -82,13 +83,16 @@ export function TaskItem({
   function move(target: "later_today" | "tomorrow" | "this_week", label: string) {
     startTransition(async () => {
       await rescheduleTaskAction(task.id, target);
+      announceTasksChanged();
       notify({ title: label, detail: task.title });
     });
   }
 
   function remove() {
+    void clearTaskNotifications(task.id);
     startTransition(async () => {
       await cancelTaskAction(task.id);
+      announceTasksChanged();
       notify({
         title: "Task deleted",
         detail: task.title,

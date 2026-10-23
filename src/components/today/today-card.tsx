@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, m } from "motion/react";
 import { Check, X } from "lucide-react";
 import { finishTaskAction, notNowAction, rateFeltAction } from "@/app/(dashboard)/today/card-actions";
-import { endFocusSessionAction, startFocusSessionAction } from "@/app/focus/actions";
+import { endFocusSessionAction, extendFocusAction, startFocusSessionAction } from "@/app/focus/actions";
 import { announceWin } from "@/components/rewards/win-layer";
 import { clearTimer, showTimer } from "@/lib/notifications/local";
 import { formatClock } from "@/components/focus/focus-logic";
@@ -145,12 +145,15 @@ function FocusTimer({
 
       <div className="flex w-full max-w-sm gap-3">
         {timesUp ? (
-          <Button variant="outline" size="xl" className="flex-1" onClick={() => setLimit((l) => (l ?? elapsed) + 5 * 60_000)}>
+          <Button variant="outline" size="xl" className="flex-1" onClick={() => {
+              setLimit((l) => (l ?? elapsed) + 5 * 60_000);
+              void sessionId().then((sid) => (sid ? extendFocusAction(sid, 5) : undefined));
+            }}>
             +5 min
           </Button>
         ) : (
           <Button variant="outline" size="xl" className="flex-1" onClick={() => onPark(sessionId())}>
-            Stop
+            Stop timer
           </Button>
         )}
         <Button variant="brand" size="xl" className="flex-1" onClick={() => onDone(sessionId())}>
@@ -285,18 +288,17 @@ export function TodayCard({
     });
   }
 
+  /**
+   * Stop just stops the timer. The task stays right here on the card, so
+   * nothing vanishes; putting it off is what "Not now" is for.
+   */
   function park(sessionId: Promise<string | null>) {
-    const target = focusItem ?? item;
-    if (!target) return;
-    const id = target.task.id;
     setFocusItem(null);
     leaveFocusAddress();
-    setHidden((h) => [...h, id]);
     setPhase("card");
     startTransition(async () => {
       const sid = await sessionId;
       if (sid) await endFocusSessionAction(sid, false);
-      await notNowAction(id);
     });
   }
 

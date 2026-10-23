@@ -77,3 +77,15 @@ export async function completeTaskStepAction(taskId: string): Promise<Completion
   revalidatePath("/today");
   return outcome;
 }
+
+/** "+5 min" in Lock-in: the "Time's up!" alert moves with it. */
+export async function extendFocusAction(sessionId: string, minutes: number): Promise<void> {
+  const session = await getSession();
+  if (!session || !Number.isInteger(minutes) || minutes < 1 || minutes > 120) return;
+  const { data } = await session.supabase.from("focus_sessions").select("planned_minutes").eq("id", sessionId).maybeSingle();
+  if (!data) return;
+  await session.supabase
+    .from("focus_sessions")
+    .update({ planned_minutes: (data.planned_minutes ?? 0) + minutes, timeup_sent_at: null })
+    .eq("id", sessionId);
+}

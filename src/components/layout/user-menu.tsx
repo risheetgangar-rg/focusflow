@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
+import { ChevronsUpDown, LogIn, LogOut, Settings } from "lucide-react";
 import { signOut } from "@/app/(auth)/actions";
 import {
   DropdownMenu,
@@ -55,6 +55,11 @@ export function UserMenu({
         <ChevronsUpDown size={16} className="shrink-0 text-white/60" />
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" className="w-60">
+        {isGuest && (
+          <DropdownMenuItem render={<Link href="/login" />}>
+            <LogIn /> Log in to my account
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem render={<Link href="/settings" />}>
           <Settings /> Settings
         </DropdownMenuItem>

@@ -1,3 +1,4 @@
+import type { NextUp } from "@/services/win-service";
 import "server-only";
 import webPush from "web-push";
 import type { PushSubscriptionRecord } from "@/types/reminder";
@@ -22,6 +23,8 @@ export interface NotificationPayload {
   url?: string;
   /** Lets the notification offer a ✓ Done button for this task. */
   taskId?: string;
+  /** The "next up" card: the service worker draws it with its ✓ and Lock in buttons. */
+  next?: NextUp | null;
 }
 
 export interface SendResult {

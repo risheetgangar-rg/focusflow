@@ -29,13 +29,23 @@ export interface Win {
 /** The one thing to show next: the same choice Today makes. */
 export async function nextUp(session: Session): Promise<NextUp | null> {
   const { supabase, userId, timezone, profile } = session;
+  return nextUpFor(supabase, userId, timezone, profile.focusAreas);
+}
+
+/** Same as nextUp, for the scheduled push job (no signed-in session there). */
+export async function nextUpFor(
+  supabase: Session["supabase"],
+  userId: string,
+  timezone: string,
+  focusAreas: string[] = [],
+): Promise<NextUp | null> {
   const now = new Date();
   const tasks = await taskRepo.listVisibleTasks(supabase, userId, now);
   const pending = tasks.filter((t) => t.status === "pending");
   const reminderSoon = pending
     .filter((t) => t.kind === "reminder" && t.dueAt && Date.parse(t.dueAt) - now.getTime() < 60 * 60_000)
     .sort((a, b) => Date.parse(a.dueAt!) - Date.parse(b.dueAt!))[0];
-  const task = reminderSoon ?? rankForToday(pending, now, profile.focusAreas)[0];
+  const task = reminderSoon ?? rankForToday(pending, now, focusAreas)[0];
   if (!task) return null;
   const due = task.dueAt ? describeDue(task.dueAt, now, timezone) : null;
   return { id: task.id, title: task.title, when: due?.label ?? null, kind: task.kind ?? "task" };

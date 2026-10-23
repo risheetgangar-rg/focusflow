@@ -2,12 +2,14 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bell, Keyboard, ListChecks, Mic, Repeat, Sparkles, Square, X } from "lucide-react";
+import { ArrowLeft, Bell, Clock, Keyboard, ListChecks, Mic, Repeat, Sparkles, Square, X } from "lucide-react";
 import { addManyAction } from "@/app/(dashboard)/today/card-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PillGroup } from "@/components/ui/pill-group";
 import { splitSpoken } from "@/lib/tasks/voice-split";
+import { understand } from "@/lib/tasks/understand";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { cn } from "@/lib/utils";
 import { PRIORITIES } from "./task-form";
 
@@ -28,8 +30,15 @@ interface Draft {
   lane: Lane;
   level: Level;
   rhythm: Rhythm;
-  /** Value of the datetime-local input, in the person's own clock. */
-  at: string;
+  /** The one switch: on means it comes back every day at `time`. */
+  everyDay: boolean;
+  /** YYYY-MM-DD and HH:MM, as shown in the inputs. */
+  date: string;
+  time: string;
+  until: string;
+  minutes: number | null;
+  /** Something was filled in from what they said, so say so. */
+  heard: boolean;
 }
 
 const RHYTHMS = [
@@ -46,12 +55,34 @@ const LANE_TITLE: Record<Lane, string> = {
 };
 
 const EXAMPLE: Record<Lane, string> = {
-  reminder: "Take my meds at 9, call the bank tomorrow…",
+  reminder: "Take my meds every day at 10:30 pm…",
   routine: "Laundry, gym, water the plants…",
-  fresh: "Pay rent, book the dentist, send the report…",
+  fresh: "Pay rent tomorrow, send the report by Friday…",
 };
 
 let nextKey = 0;
+
+/** Reads the words for a time, a day, "every day", an end and a length, and fills them in. */
+function draftFrom(spoken: string, saidRemind: boolean, chosen: Lane): Draft {
+  const u = understand(spoken);
+  // Said "remind me" (or it's medicine): it's a reminder. A weekly-ish rhythm: a non-negotiable.
+  const lane: Lane =
+    chosen === "routine" ? "routine" : saidRemind || u.reminder ? "reminder" : u.repeat && u.repeat !== "daily" ? "routine" : chosen;
+  return {
+    key: nextKey++,
+    title: u.title || spoken,
+    lane,
+    level: "medium",
+    rhythm: (u.repeat ?? "daily") as Rhythm,
+    everyDay: u.repeat === "daily",
+    date: u.date ?? "",
+    // A reminder needs a time; if they gave a day or "every day" but no time, start with 9 am.
+    time: u.time ?? (lane === "reminder" && (u.date || u.repeat) ? "09:00" : ""),
+    until: u.until ?? "",
+    minutes: u.minutes,
+    heard: Boolean(u.repeat || u.date || u.time || u.until || u.minutes),
+  };
+}
 
 function Choice({
   icon: Icon,
@@ -102,10 +133,7 @@ export function VoiceAdd() {
       return;
     }
     setMessage(null);
-    setDrafts((d) => [
-      ...d,
-      ...items.map((i) => ({ key: nextKey++, title: i.title, lane, level: "medium" as Level, rhythm: "daily" as Rhythm, at: "" })),
-    ]);
+    setDrafts((d) => [...d, ...items.map((i) => draftFrom(i.title, i.kind === "reminder", lane))]);
   }
 
   async function startRecording() {
@@ -155,7 +183,7 @@ export function VoiceAdd() {
 
   function save() {
     const items = drafts.filter((d) => d.title.trim());
-    if (items.some((d) => d.lane === "reminder" && !d.at)) {
+    if (items.some((d) => d.lane === "reminder" && !d.time)) {
       setMessage("Give each reminder a time.");
       return;
     }
@@ -165,8 +193,11 @@ export function VoiceAdd() {
           title: d.title.trim(),
           kind: d.lane === "reminder" ? "reminder" : "task",
           level: d.level,
-          repeat: d.lane === "routine" ? d.rhythm : null,
-          at: d.at ? new Date(d.at).toISOString() : null,
+          repeat: d.lane === "routine" ? d.rhythm : d.everyDay ? "daily" : null,
+          date: d.everyDay && d.lane !== "routine" ? null : d.date || null,
+          time: d.time || null,
+          until: d.until || null,
+          minutes: d.minutes,
         })),
       );
       if (!result.ok) {
@@ -272,18 +303,49 @@ export function VoiceAdd() {
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <PillGroup name={`level-${d.key}`} ariaLabel="Priority" options={PRIORITIES} value={d.level} onValueChange={(v) => update(d.key, { level: v as Level })} optionClassName="h-8 px-3 text-xs" />
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
                 {d.lane === "routine" ? (
                   <PillGroup name={`rhythm-${d.key}`} ariaLabel="How often" options={RHYTHMS} value={d.rhythm} onValueChange={(v) => update(d.key, { rhythm: v as Rhythm })} optionClassName="h-8 px-3 text-xs" />
                 ) : (
+                  <ToggleSwitch label="Every day" checked={d.everyDay} onChange={(on) => update(d.key, { everyDay: on })} />
+                )}
+                {!d.everyDay && d.lane !== "routine" && (
+                  <label className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground">on</span>
+                    <Input type="date" value={d.date} onChange={(e) => update(d.key, { date: e.target.value })} aria-label="Day" className="h-9 w-auto" />
+                  </label>
+                )}
+                <label className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">at</span>
                   <Input
-                    type="datetime-local"
-                    value={d.at}
-                    onChange={(e) => update(d.key, { at: e.target.value })}
-                    aria-label={d.lane === "reminder" ? "Remind me at" : "Do it by (optional)"}
-                    className={cn("h-9 w-auto", d.lane === "reminder" && !d.at && "border-brand")}
+                    type="time"
+                    value={d.time}
+                    onChange={(e) => update(d.key, { time: e.target.value })}
+                    aria-label={d.lane === "reminder" ? "Remind me at" : "Time (optional)"}
+                    className={cn("h-9 w-auto", d.lane === "reminder" && !d.time && "border-brand")}
                   />
+                </label>
+                {(d.everyDay || d.lane === "routine") && (
+                  <label className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground">until</span>
+                    <Input type="date" value={d.until} onChange={(e) => update(d.key, { until: e.target.value })} aria-label="Until (optional)" className="h-9 w-auto" />
+                  </label>
+                )}
+                {d.minutes && d.lane !== "reminder" && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs font-medium">
+                    <Clock size={12} /> {d.minutes} min
+                    <button type="button" aria-label="Remove time estimate" onClick={() => update(d.key, { minutes: null })}>
+                      <X size={12} />
+                    </button>
+                  </span>
                 )}
               </div>
+              {d.heard && (
+                <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand">
+                  <Sparkles size={12} /> Filled in from what you said. Change anything you like.
+                </p>
+              )}
             </div>
           ))}
           <Button variant="brand" size="lg" className="w-full" onClick={save} disabled={saving}>

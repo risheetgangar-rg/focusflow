@@ -18,6 +18,8 @@ export const taskFormSchema = z.object({
   mustDo: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()).default(false),
   fixedDate: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()).default(false),
   kind: z.enum(["task", "reminder"]).default("task"),
+  everyDay: z.preprocess((v) => v === "on", z.boolean()).default(false),
+  repeatUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
   /** Optional free text for the kind of task ("bills", "gym stuff"); matched to a type. */
   kindText: z.string().trim().max(60).optional().or(z.literal("")),
 });

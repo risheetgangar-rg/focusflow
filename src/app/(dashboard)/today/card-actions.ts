@@ -7,6 +7,7 @@ import { addDaysToDateString, zonedDateString, zonedParts, zonedTimeToUtc } from
 import { guessTaskType, isTaskType } from "@/lib/tasks/personal";
 import * as taskRepo from "@/repositories/task-repository";
 import { track } from "@/services/analytics-service";
+import { dueFrom } from "@/lib/tasks/when";
 import { finishWithWin, type Win } from "@/services/win-service";
 
 function refresh() {
@@ -83,8 +84,12 @@ const itemSchema = z.object({
   level: z.enum(["low", "medium", "high", "critical"]),
   /** Non-negotiables repeat on a rhythm; everything else is a one-off. */
   repeat: z.enum(["daily", "twice_weekly", "thrice_weekly", "weekly"]).nullable().optional(),
-  /** Exact date and time, already turned into an ISO string by the browser. */
-  at: z.string().datetime().nullable(),
+  /** The day (YYYY-MM-DD) and time (HH:MM) as picked, in the person's own clock. */
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+  /** Last day a repeating one comes back. */
+  until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  minutes: z.number().int().positive().max(600).nullable().optional(),
 });
 const manySchema = z.array(itemSchema).min(1).max(20);
 
@@ -100,7 +105,7 @@ const LEVEL = {
 export async function addManyAction(input: unknown): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
   const parsed = manySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Something in the list needs a look." };
-  if (parsed.data.some((i) => i.kind === "reminder" && !i.at)) return { ok: false, error: "Reminders need a time." };
+  if (parsed.data.some((i) => i.kind === "reminder" && !i.time)) return { ok: false, error: "Reminders need a time." };
   const session = await getSession();
   if (!session) return { ok: false, error: "Please sign in again." };
 
@@ -109,8 +114,10 @@ export async function addManyAction(input: unknown): Promise<{ ok: true; count: 
       title: item.title,
       kind: item.kind,
       taskType: guessTaskType(item.title),
-      dueAt: item.at,
+      dueAt: dueFrom(item, session.timezone),
       recurrenceRule: item.repeat ?? null,
+      repeatUntil: item.repeat ? (item.until ?? null) : null,
+      estimatedMinutes: item.kind === "task" ? (item.minutes ?? null) : null,
       ...LEVEL[item.level],
       source: "voice",
     });

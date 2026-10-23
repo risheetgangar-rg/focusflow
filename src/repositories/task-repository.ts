@@ -26,6 +26,7 @@ interface TaskRow {
   task_type: string;
   felt?: string | null;
   kind?: string;
+  repeat_until?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -69,6 +70,7 @@ function toTask(row: TaskRow): Task {
     taskType: (row.task_type ?? "other") as Task["taskType"],
     felt: (row.felt ?? null) as Task["felt"],
     kind: (row.kind ?? "task") as Task["kind"],
+    repeatUntil: row.repeat_until ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -105,6 +107,7 @@ function toRow(input: Partial<TaskInput>) {
     ...(input.mustDo !== undefined && { must_do: input.mustDo }),
     ...(input.taskType !== undefined && { task_type: input.taskType }),
     ...(input.kind !== undefined && { kind: input.kind }),
+    ...(input.repeatUntil !== undefined && { repeat_until: input.repeatUntil }),
   };
 }
 

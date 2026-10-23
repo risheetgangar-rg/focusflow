@@ -23,6 +23,9 @@ function tidy(text: string): string {
 
 export function splitSpoken(transcript: string): SpokenItem[] {
   return transcript
+    // Keep times whole before splitting on full stops: "10.30 p.m." stays one thing.
+    .replace(/(\d)\.(\d{2})/g, "$1:$2")
+    .replace(/\b([ap])\.\s?m\.(\s+[A-Z])?/g, (_, ap: string, next?: string) => (next ? `${ap}m.${next}` : `${ap}m`))
     .split(SPLIT)
     .map((part) => part?.trim() ?? "")
     .filter(Boolean)

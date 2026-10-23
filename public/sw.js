@@ -139,9 +139,13 @@ self.addEventListener("push", (event) => {
     tag: payload.tag || undefined,
     icon: "/icon-192.png",
     badge: "/icon-192.png",
+    // Important ones (reminders, critical nudges) buzz again and stay until dealt with.
+    renotify: Boolean(payload.tag && payload.urgent),
+    requireInteraction: Boolean(payload.urgent),
+    vibrate: payload.urgent ? [120, 60, 120] : undefined,
     data: { url: payload.url || "/today", taskId: payload.taskId || null },
   };
-  // Reminders about one task get the same ✓ as the "next up" card.
+  // Anything about one task gets the same ✓ as the "next up" card.
   if (payload.taskId) options.actions = [{ action: "done", title: "✓ Done" }, { action: "open", title: "Open" }];
   event.waitUntil(self.registration.showNotification(payload.title || "Unstuck", options));
 });
@@ -149,6 +153,18 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   const { action } = event;
   const data = event.notification.data || {};
+
+  // ✓ on the "Time's up!" alert while the app is open: let the app finish its own timer.
+  if (event.notification.tag === TIMER_TAG && action === "done") {
+    event.notification.close();
+    event.waitUntil(
+      self.clients.matchAll({ type: "window" }).then((windows) => {
+        if (windows.length === 0) return data.taskId ? tickOff(data.taskId) : undefined;
+        windows.forEach((client) => client.postMessage({ type: "unstuck:timer", action: "timer-done" }));
+      }),
+    );
+    return;
+  }
 
   // ✓ Done: tick it off here, no need to open the app.
   if (action === "done" && data.taskId) {

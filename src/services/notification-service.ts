@@ -25,6 +25,10 @@ export interface NotificationPayload {
   taskId?: string;
   /** The "next up" card: the service worker draws it with its ✓ and Lock in buttons. */
   next?: NextUp | null;
+  /** Groups repeats of the same nudge into one notification on the phone. */
+  tag?: string;
+  /** Makes a sound and stays until dealt with (reminders, critical nudges). */
+  urgent?: boolean;
 }
 
 export interface SendResult {

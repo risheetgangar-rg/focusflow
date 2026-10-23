@@ -33,14 +33,35 @@ async function registration(): Promise<ServiceWorkerRegistration | null> {
   return (await navigator.serviceWorker.getRegistration()) ?? null;
 }
 
-/** Put (or replace) the "next up" card in the notification bar. */
+/**
+ * Put (or replace) the "next up" card in the notification bar, and close any
+ * notification about a task that has since been deleted or finished.
+ */
 export async function showNextUp(next?: NextUp | null) {
-  if (!nextUpEnabled()) return;
   const reg = await registration();
   if (!reg?.active) return;
-  const value =
-    next !== undefined ? next : ((await fetch("/api/tasks/next").then((r) => (r.ok ? r.json() : { next: null })).catch(() => ({ next: null }))) as { next: NextUp | null }).next;
-  reg.active.postMessage({ type: "unstuck:next-up", next: value });
+  let value = next;
+  if (value === undefined) {
+    const data = (await fetch("/api/tasks/next")
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null)) as { next: NextUp | null; openIds: string[] } | null;
+    if (!data) return;
+    value = data.next;
+    const open = new Set(data.openIds);
+    for (const n of await reg.getNotifications()) {
+      const taskId = (n.data as { taskId?: string } | null)?.taskId;
+      if (taskId && !open.has(taskId)) n.close();
+    }
+  }
+  if (nextUpEnabled()) reg.active.postMessage({ type: "unstuck:next-up", next: value });
+}
+
+/** A task was deleted or finished here: take its notifications away right now. */
+export async function clearTaskNotifications(taskId: string) {
+  const reg = await registration();
+  for (const n of (await reg?.getNotifications()) ?? []) {
+    if ((n.data as { taskId?: string } | null)?.taskId === taskId) n.close();
+  }
 }
 
 export async function clearNextUp() {
@@ -60,13 +81,16 @@ function clockTime(ms: number) {
 export async function showTimer(title: string, remainingMs: number | null, elapsedMs: number, timesUp = false) {
   const reg = await registration();
   if (!reg) return;
-  const minutes = Math.max(0, Math.ceil((remainingMs ?? 0) / 60_000));
-  const body = timesUp
-    ? "Time's up! Tap Done if you finished, or keep going."
+  // The finish time never goes stale, even if the phone pauses the app; the
+  // server also sends "Time's up!" at that minute, screen off or not.
+  const startedAt = Date.now() - elapsedMs;
+  const heading = timesUp
+    ? "⏰ Time's up!"
     : remainingMs === null
-      ? `Locked in for ${Math.floor(elapsedMs / 60_000)} min`
-      : `${minutes} min left · ends at ${clockTime(Date.now() + remainingMs)}`;
-  await reg.showNotification(`🔒 ${title}`, {
+      ? `🔒 Locked in since ${clockTime(startedAt)}`
+      : `🔒 Locked in until ${clockTime(Date.now() + remainingMs)}`;
+  const body = timesUp ? `“${title}” · Tap ✓ Done if you finished, or keep going.` : `“${title}” · Tap ✓ Done when you finish.`;
+  await reg.showNotification(heading, {
     tag: TIMER_TAG,
     body,
     icon: "/icon-192.png",
@@ -82,4 +106,9 @@ export async function showTimer(title: string, remainingMs: number | null, elaps
 export async function clearTimer() {
   const reg = await registration();
   (await reg?.getNotifications({ tag: TIMER_TAG }))?.forEach((n) => n.close());
+}
+
+/** Tell the notification bar the list changed (deleted, moved, snoozed), so it refreshes. */
+export function announceTasksChanged() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("unstuck:tasks-changed"));
 }

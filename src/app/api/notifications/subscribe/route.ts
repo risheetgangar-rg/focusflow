@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import * as reminderRepo from "@/repositories/reminder-repository";
 
@@ -20,6 +21,13 @@ export async function POST(request: NextRequest) {
   if (!endpoint || !keys?.p256dh || !keys?.auth) {
     return NextResponse.json({ error: "Invalid subscription." }, { status: 400 });
   }
+
+  // One phone, one owner: whoever is signed in now. A sign-up left behind by an
+  // earlier session (a guest, another account) on this same phone moves over,
+  // so that account stops getting notifications here. Holding the endpoint and
+  // its keys is proof it is this device.
+  const admin = createAdminClient();
+  if (admin) await admin.from("push_subscriptions").delete().eq("endpoint", endpoint).neq("user_id", user.id);
 
   await reminderRepo.upsertSubscription(supabase, user.id, {
     endpoint,

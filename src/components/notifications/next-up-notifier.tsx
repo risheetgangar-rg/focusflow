@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { showNextUp } from "@/lib/notifications/local";
-import { isPushSupported, subscribeToPush } from "@/lib/notifications/subscribe";
+import { isPushSupported, relinkPush, subscribeToPush } from "@/lib/notifications/subscribe";
 import type { Win } from "@/services/win-service";
 
 const ASKED = "unstuck-asked-reminders";
@@ -29,7 +29,12 @@ export function NextUpNotifier() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    void showNextUp();
+    // Make sure this phone's notifications belong to whoever is signed in, then refresh them.
+    void relinkPush().then(() => showNextUp());
+    const refresh = () => void showNextUp();
+    window.addEventListener("unstuck:tasks-changed", refresh);
+    const onVisible = () => document.visibilityState === "visible" && refresh();
+    document.addEventListener("visibilitychange", onVisible);
 
     const onWin = (e: Event) => void showNextUp((e as CustomEvent<Win>).detail.next);
     window.addEventListener("unstuck:win", onWin);
@@ -49,6 +54,8 @@ export function NextUpNotifier() {
 
     return () => {
       window.removeEventListener("unstuck:win", onWin);
+      window.removeEventListener("unstuck:tasks-changed", refresh);
+      document.removeEventListener("visibilitychange", onVisible);
       navigator.serviceWorker?.removeEventListener("message", onMessage);
     };
   }, [router]);

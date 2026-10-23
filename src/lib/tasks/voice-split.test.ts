@@ -16,6 +16,13 @@ describe("splitSpoken", () => {
     expect(splitSpoken("buy milk and eggs")).toEqual([{ title: "Buy milk and eggs", kind: "task" }]);
   });
 
+  it("keeps spoken times in one piece", () => {
+    expect(splitSpoken("Remind me to take medication every single day at 10.30 p.m. Pay rent tomorrow.")).toEqual([
+      { title: "Take medication every single day at 10:30 pm", kind: "reminder" },
+      { title: "Pay rent tomorrow", kind: "task" },
+    ]);
+  });
+
   it("ignores empty bits", () => {
     expect(splitSpoken(" , . um ")).toEqual([]);
   });

@@ -36,6 +36,8 @@ export interface Task {
   /** Set by one optional tap after finishing. */
   felt?: Felt | null;
   kind?: TaskKind;
+  /** Last day a repeating one comes back (YYYY-MM-DD), or null for no end. */
+  repeatUntil?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -67,6 +69,8 @@ export interface TaskInput {
   mustDo?: boolean;
   taskType?: TaskType;
   kind?: TaskKind;
+  /** Last day a repeating one comes back (YYYY-MM-DD), or null for no end. */
+  repeatUntil?: string | null;
   /** For a recurring series: the occurrence this one was generated from. */
   parentTaskId?: string | null;
 }

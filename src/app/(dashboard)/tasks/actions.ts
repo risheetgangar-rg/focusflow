@@ -5,6 +5,7 @@ import { getSession, type Session } from "@/lib/auth/session";
 import { zonedTimeToUtc } from "@/lib/dates/tz";
 import { bossStatus } from "@/lib/tasks/boss";
 import { TASK_TYPES, guessTaskType } from "@/lib/tasks/personal";
+import { dueFrom } from "@/lib/tasks/when";
 import {
   breakdownStepsSchema,
   quickTaskSchema,
@@ -61,7 +62,9 @@ export async function saveTask(
 
   const v = parsed.data;
   const reminder = v.kind === "reminder";
-  if (reminder && (!v.dueDate || !v.dueTime)) return { error: "Reminders need a day and a time." };
+  if (reminder && !v.dueTime) return { error: "Reminders need a time." };
+  if (reminder && !v.everyDay && !v.dueDate) return { error: "Pick a day, or switch on Every day." };
+  const repeating = v.recurrenceRule !== "none";
   // The form only asks for one priority now; High and Critical count as "Must do".
   const input = {
     title: v.title,
@@ -70,7 +73,10 @@ export async function saveTask(
     priority: v.priority as TaskPriority,
     mustDo: v.priority === "high" || v.priority === "critical",
     estimatedMinutes: reminder || v.estimatedMinutes === "" ? null : Number(v.estimatedMinutes),
-    dueAt: v.dueDate ? zonedTimeToUtc(v.dueDate, v.dueTime, timezone).toISOString() : null,
+    // "Every day" needs only a time: it starts at the next time the clock shows it.
+    dueAt:
+      v.dueDate && !v.everyDay ? zonedTimeToUtc(v.dueDate, v.dueTime, timezone).toISOString() : dueFrom({ time: v.dueTime || null }, timezone),
+    repeatUntil: repeating ? v.repeatUntil || null : null,
     recurrenceRule: v.recurrenceRule === "none" ? null : (v.recurrenceRule as RecurrenceRule),
     taskType: typeFromText(v.kindText || v.title),
   };

@@ -34,6 +34,9 @@ export async function GET(request: NextRequest) {
   let sent = 0;
 
   for (const userId of userIds) {
+    // Guests only look around: never notified, even if a sign-up slipped through.
+    const { data: account } = await admin.auth.admin.getUserById(userId);
+    if (!account?.user || account.user.is_anonymous) continue;
     const [prefs, timezone] = await Promise.all([
       reminderRepo.getPreferences(admin, userId),
       reminderRepo.getTimezone(admin, userId),

@@ -42,7 +42,7 @@ export default async function AppShellLayout({ children }: { children: React.Rea
         </div>
         <MobileNav />
         <WinLayer />
-        <NextUpNotifier />
+        <NextUpNotifier isGuest={isGuest} />
       </QuickAddProvider>
     </AppProviders>
   );

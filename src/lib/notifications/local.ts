@@ -27,7 +27,15 @@ export function setNextUpEnabled(on: boolean) {
   }
 }
 
+let allowed = false;
+
+/** Only signed-in accounts get notifications; guests just look around. Set by the app shell. */
+export function setNotificationsAllowed(on: boolean) {
+  allowed = on;
+}
+
 async function registration(): Promise<ServiceWorkerRegistration | null> {
+  if (!allowed) return null;
   if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("Notification" in window)) return null;
   if (Notification.permission !== "granted") return null;
   return (await navigator.serviceWorker.getRegistration()) ?? null;

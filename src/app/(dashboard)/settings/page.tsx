@@ -74,7 +74,18 @@ export default async function SettingsPage() {
             title="Reminders"
             description="Optional nudges, on your terms."
           >
-            <NotificationSettings prefs={prefs} />
+            {isGuest ? (
+              <p className="rounded-2xl bg-card/70 px-5 py-4 text-sm">
+                Reminders and notifications are for your own account. You&apos;re looking around as a guest, so they&apos;re
+                off.{" "}
+                <a href="/login" className="font-semibold text-brand underline underline-offset-4">
+                  Log in or sign up
+                </a>{" "}
+                to turn them on.
+              </p>
+            ) : (
+              <NotificationSettings prefs={prefs} />
+            )}
           </SettingsSection>
         </StaggerItem>
 

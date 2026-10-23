@@ -16,6 +16,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
+  // Guest accounts are a look around, not the real thing: no notifications.
+  if (user.is_anonymous) {
+    return NextResponse.json({ error: "Sign in to your account to get reminders." }, { status: 403 });
+  }
+
   const body = await request.json();
   const { endpoint, keys } = body ?? {};
   if (!endpoint || !keys?.p256dh || !keys?.auth) {

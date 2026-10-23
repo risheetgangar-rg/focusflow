@@ -37,6 +37,9 @@ export async function GET(request: NextRequest) {
       .is("timeup_sent_at", null)
       .select("id");
     if (!claimed?.length) continue;
+    // Marked as handled either way, but guests only look around: no alert.
+    const { data: account } = await admin.auth.admin.getUserById(s.user_id as string);
+    if (!account?.user || account.user.is_anonymous) continue;
 
     const { data: task } = await admin.from("tasks").select("title").eq("id", s.task_id).maybeSingle();
     for (const sub of await reminderRepo.listSubscriptionsForUser(admin, s.user_id as string)) {

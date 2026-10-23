@@ -128,6 +128,12 @@ self.addEventListener("push", (event) => {
     payload = { title: "Unstuck", body: event.data.text() };
   }
 
+  // The scheduled "next up" card: drawn exactly like the one the app shows.
+  if ("next" in payload) {
+    event.waitUntil(showNextUp(payload.next));
+    return;
+  }
+
   const options = {
     body: payload.body || "",
     tag: payload.tag || undefined,

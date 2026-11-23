@@ -100,7 +100,14 @@ export async function signUp(
   // With email confirmation off, Supabase signs the person in straight away.
   if (data.session) redirect("/today");
 
-  return { message: "Check your email for a link to confirm your account." };
+  // An address that already has an account gets no email (Supabase stays quiet so
+  // nobody can probe which emails are registered), and comes back with no identities.
+  // Say so, instead of leaving them waiting for a mail that never comes.
+  if (data.user && (data.user.identities?.length ?? 0) === 0) {
+    return { error: "You already have an account with this email. Log in instead, or use “Forgot password” if you need a new one." };
+  }
+
+  return { message: "Check your email for a link to confirm your account. It can take a minute, and peek in Spam too." };
 }
 
 export async function signInWithMagicLink(

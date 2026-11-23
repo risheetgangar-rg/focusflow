@@ -1,0 +1,52 @@
+<!--
+  Supabase → Authentication → Emails → "Confirm signup"
+  Subject: Your brain called. It wants to get unstuck 🧠⚡
+-->
+<!doctype html>
+<html lang="en">
+  <body style="margin:0;padding:0;background:#eef1fc;font-family:Arial, Helvetica, sans-serif;color:#16134a;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef1fc;padding:32px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:24px;overflow:hidden;">
+            <tr>
+              <td align="center" style="background:#1a00a8;padding:12px;">
+                <img src="https://focusflow-drab-beta.vercel.app/email/unstuck-logo.png" width="240" height="240" alt="Unstuck" style="display:block;border:0;width:240px;height:240px;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:36px 32px 12px;">
+                <p style="margin:0 0 8px;font-size:14px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#1446c8;">One tap and you're in</p>
+                <h1 style="margin:0 0 16px;font-size:28px;line-height:1.2;color:#16134a;">Welcome to the club for brains that start late 🎉</h1>
+                <p style="margin:0 0 24px;font-size:16px;line-height:1.6;color:#4a4870;">
+                  No 47-item to-do lists. No guilt for the days you disappear. Just one task at a time, and a
+                  high-five when it's done. Confirm your email and let's get you unstuck.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:0 32px 28px;">
+                <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/today"
+                   style="display:inline-block;background:#ffe066;color:#1a00a8;font-size:17px;font-weight:bold;text-decoration:none;padding:16px 36px;border-radius:16px;border-bottom:4px solid #c7a400;">
+                  Get me unstuck →
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 32px;">
+                <p style="margin:0;padding:16px;background:#eef1fc;border-radius:14px;font-size:14px;line-height:1.5;color:#4a4870;">
+                  🔒 <b>Your first win is waiting:</b> confirming this email counts. Look at you, already crossing things off.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 32px;font-size:12px;line-height:1.5;color:#8a88a8;">
+                Didn't sign up for Unstuck? You can safely ignore this email.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
